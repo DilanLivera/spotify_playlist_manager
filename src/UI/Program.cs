@@ -1,7 +1,5 @@
 using UI.Components;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.Google;
+using UI.Infrastructure;
 
 WebApplicationBuilder? builder = WebApplication.CreateBuilder(args);
 
@@ -11,27 +9,7 @@ builder.Services
 
 builder.Services.AddHttpContextAccessor();
 
-builder.Services
-       .AddAuthentication(options =>
-       {
-           options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-           options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
-       })
-       .AddCookie()
-       .AddGoogle(options =>
-       {
-           builder.Configuration.Bind(key: "Authentication:Google", options);
-
-           if (string.IsNullOrEmpty(options.ClientId))
-           {
-               throw new InvalidOperationException("Google ClientId not found.");
-           }
-
-           if (string.IsNullOrEmpty(options.ClientSecret))
-           {
-               throw new InvalidOperationException("Google ClientSecret not found.");
-           }
-       });
+builder.Services.AddApplicationAuth(builder.Configuration);
 
 builder.Services.AddAuthorizationCore();
 
@@ -52,26 +30,7 @@ app.UseAntiforgery();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapGet(
-           pattern: "/signin",
-           async (HttpContext context) =>
-           {
-               AuthenticationProperties properties = new() { RedirectUri = "/" };
-               await context.ChallengeAsync(
-                                            GoogleDefaults.AuthenticationScheme,
-                                            properties);
-
-               return Results.Empty;
-           });
-
-app.MapGet(
-           pattern: "/signout",
-           async (HttpContext context) =>
-           {
-               await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-
-               return Results.Redirect(url: "/");
-           });
+app.UseApplicationAuth();
 
 app.MapRazorComponents<App>()
    .AddInteractiveServerRenderMode();
