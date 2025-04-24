@@ -1,0 +1,176 @@
+@page "/playlist/{PlaylistId}"
+@using UI.Models
+@using UI.Services
+@inject SpotifyService SpotifyService
+@inject SpotifyStateService SpotifyState
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+
+<PageTitle>Playlist Details</PageTitle>
+
+<div class="p-8">
+    <div class="max-w-7xl mx-auto">
+        <div class="mb-6">
+            <a href="/playlists"
+               class="text-gray-400 hover:text-gray-300 flex items-center">
+                <svg class="w-5 h-5 mr-1"
+
+                     fill="none"
+                     stroke="currentColor"
+                     viewBox="0 0 24 24"
+                     xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M15 19l-7-7 7-7"/>
+                </svg>
+                Back to Playlists
+            </a>
+        </div>
+
+        @if (_loading)
+        {
+            <div class="flex justify-center my-12">
+                <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
+            </div>
+        }
+        else if (_tracksByGenre.Count == 0)
+        {
+            <div class="bg-[#232a3b] p-6 rounded-lg shadow-lg">
+                <h1 class="text-xl font-bold text-white mb-2">
+                    Playlist not found
+                </h1>
+                <p class="text-gray-400">
+                    The playlist could not be found or is empty.
+                </p>
+            </div>
+        }
+        else
+        {
+            <div class="mb-8">
+                <div class="flex items-center justify-between">
+                    <h1 class="text-3xl font-bold text-white">
+                        Sorted by Genre
+                    </h1>
+                    <button type="button"
+                            @onclick="ToggleView"
+                            class="text-white bg-green-600 hover:bg-green-700 focus:ring-2 focus:ring-green-400 font-medium rounded-lg text-sm px-4 py-2.5 text-center inline-flex items-center">
+                        @(_showCompactView ? "Show Details" : "Compact View")
+                    </button>
+                </div>
+                <p class="text-gray-400 mt-2">
+                    Total: @_totalTracks tracks in @_tracksByGenre.Count genres
+                </p>
+            </div>
+
+            <div class="space-y-6">
+                @foreach (string? genre in _tracksByGenre.Keys)
+                {
+                    <div class="bg-[#232a3b] rounded-lg shadow-lg overflow-hidden">
+                        <div class="bg-[#2c3549] p-4">
+                            <h2 class="text-xl font-semibold text-white">
+                                @genre (@_tracksByGenre[genre].Count tracks)
+                            </h2>
+                        </div>
+                        <div class="p-4">
+                            <div class="overflow-x-auto">
+                                <table class="w-full">
+                                    <thead class="text-left text-gray-400 border-b border-gray-700">
+                                    <tr>
+                                        <th class="pb-2 font-medium">#</th>
+                                        @if (!_showCompactView)
+                                        {
+                                            <th class="pb-2 font-medium">Cover</th>
+                                        }
+                                        <th class="pb-2 font-medium">Title</th>
+                                        <th class="pb-2 font-medium">Artist</th>
+                                        @if (!_showCompactView)
+                                        {
+                                            <th class="pb-2 font-medium">Album</th>
+                                        }
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    @{
+                                        int trackNumber = 1;
+                                    }
+                                    @foreach (SpotifyTrack? track in _tracksByGenre[genre])
+                                    {
+                                        <tr class="hover:bg-gray-800/30 border-b border-gray-700/50">
+                                            <td class="py-3 text-gray-400">@trackNumber</td>
+                                            @if (!_showCompactView)
+                                            {
+                                                <td class="py-3">
+                                                    @if (!string.IsNullOrEmpty(track.Album.GetAlbumImageUrl()))
+                                                    {
+                                                        <img src="@track.Album.GetAlbumImageUrl()"
+                                                             alt="@track.Album.Name"
+                                                             class="w-10 h-10 rounded"/>
+                                                    }
+                                                    else
+                                                    {
+                                                        <div class="w-10 h-10 rounded bg-gray-700 flex items-center justify-center">
+                                                            <svg class="w-6 h-6 text-gray-500"
+                                                                 fill="currentColor"
+                                                                 viewBox="0 0 20 20"
+                                                                 xmlns="http://www.w3.org/2000/svg">
+                                                                <path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.82l8-1.6v5.894A4.37 4.37 0 0015 12c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z"/>
+                                                            </svg>
+                                                        </div>
+                                                    }
+                                                </td>
+                                            }
+                                            <td class="py-3 text-white font-medium">@track.Name</td>
+                                            <td class="py-3 text-gray-400">@track.GetArtistsString()</td>
+                                            @if (!_showCompactView)
+                                            {
+                                                <td class="py-3 text-gray-400">@track.Album?.Name</td>
+                                            }
+                                        </tr>
+                                        trackNumber++;
+                                    }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+
+    [Parameter]
+    public string PlaylistId { get; set; } = string.Empty;
+
+    private Dictionary<string, List<SpotifyTrack>> _tracksByGenre = [];
+    private bool _loading = true;
+    private bool _showCompactView = false;
+    private int _totalTracks = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!SpotifyState.IsAuthenticated())
+        {
+            NavigationManager.NavigateTo(uri: "/spotify-auth");
+            return;
+        }
+
+        await LoadPlaylistTracksAsync();
+    }
+
+    private async Task LoadPlaylistTracksAsync()
+    {
+        _loading = true;
+
+        string accessToken = SpotifyState.GetAccessToken();
+        _tracksByGenre = await SpotifyService.SortTracksByGenreAsync(accessToken, PlaylistId);
+        _totalTracks = _tracksByGenre.Sum(g => g.Value.Count);
+
+        _loading = false;
+    }
+
+    private void ToggleView() => _showCompactView = !_showCompactView;
+}
