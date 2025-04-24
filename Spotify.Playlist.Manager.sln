@@ -12,6 +12,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		README.md = README.md
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{F7CE2202-3489-4DAF-B18B-B0DD499C15F0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UI", "src\UI\UI.csproj", "{01ED2B76-029B-4E1A-B857-F7482424BD62}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -19,5 +23,14 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{01ED2B76-029B-4E1A-B857-F7482424BD62} = {F7CE2202-3489-4DAF-B18B-B0DD499C15F0}
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{01ED2B76-029B-4E1A-B857-F7482424BD62}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{01ED2B76-029B-4E1A-B857-F7482424BD62}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{01ED2B76-029B-4E1A-B857-F7482424BD62}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{01ED2B76-029B-4E1A-B857-F7482424BD62}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
