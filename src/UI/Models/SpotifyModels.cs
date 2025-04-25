@@ -85,6 +85,9 @@ public sealed class SpotifyAlbum
     [JsonPropertyName("images")]
     public List<SpotifyImage> Images { get; init; } = [];
 
+    [JsonPropertyName("release_date")]
+    public string ReleaseDate { get; init; } = string.Empty;
+
     public string GetAlbumImageUrl() => Images.FirstOrDefault()?.Url ?? string.Empty;
 }
 

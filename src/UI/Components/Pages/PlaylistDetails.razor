@@ -14,7 +14,6 @@
             <a href="/"
                class="text-gray-400 hover:text-gray-300 flex items-center">
                 <svg class="w-5 h-5 mr-1"
-
                      fill="none"
                      stroke="currentColor"
                      viewBox="0 0 24 24"
@@ -34,7 +33,7 @@
                 <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
             </div>
         }
-        else if (_tracksByGenre.Count == 0)
+        else if (_tracks.Count == 0)
         {
             <div class="bg-[#232a3b] p-6 rounded-lg shadow-lg">
                 <h1 class="text-xl font-bold text-white mb-2">
@@ -48,28 +47,70 @@
         else
         {
             <div class="mb-8">
-                <div class="flex items-center justify-between">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <h1 class="text-3xl font-bold text-white">
-                        Sorted by Genre
+                        @if (_sortingBy == SortingOption.Genre)
+                        {
+                            <span>Sorted by Genre</span>
+                        }
+                        else
+                        {
+                            <span>Sorted by Decade</span>
+                        }
                     </h1>
-                    <button type="button"
-                            @onclick="ToggleView"
-                            class="text-white bg-green-600 hover:bg-green-700 focus:ring-2 focus:ring-green-400 font-medium rounded-lg text-sm px-4 py-2.5 text-center inline-flex items-center">
-                        @(_showCompactView ? "Show Details" : "Compact View")
-                    </button>
+                    <div class="flex gap-3">
+                        <div class="bg-[#1A1E2A] p-1 rounded-full shadow-lg">
+                            <button type="button"
+                                    @onclick="() => SetSortingOption(SortingOption.Genre)"
+                                    class="@GetSortingButtonClass(SortingOption.Genre)">
+                                <svg class="w-4 h-4 mr-1 inline" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                </svg>
+                                <span>Genre</span>
+                            </button>
+                            <button type="button"
+                                    @onclick="() => SetSortingOption(SortingOption.Decade)"
+                                    class="@GetSortingButtonClass(SortingOption.Decade)">
+                                <svg class="w-4 h-4 mr-1 inline" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
+                                </svg>
+                                <span>Decade</span>
+                            </button>
+                        </div>
+                        <button type="button"
+                                @onclick="ToggleView"
+                                class="text-white bg-gradient-to-r from-green-600 to-emerald-500 hover:bg-gradient-to-l focus:ring-2 focus:ring-green-400 font-medium rounded-full text-sm px-5 py-2.5 text-center inline-flex items-center shadow-lg transition-all duration-200">
+                            @if (_showCompactView)
+                            {
+                                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"></path>
+                                    <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"></path>
+                                </svg>
+                                <span>Details</span>
+                            }
+                            else
+                            {
+                                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path>
+                                    <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"></path>
+                                </svg>
+                                <span>Compact</span>
+                            }
+                        </button>
+                    </div>
                 </div>
                 <p class="text-gray-400 mt-2">
-                    Total: @_totalTracks tracks in @_tracksByGenre.Count genres
+                    Total: @_tracks.Count tracks in @_groupedTracks.Count @(_sortingBy == SortingOption.Genre ? "genres" : "decades")
                 </p>
             </div>
 
             <div class="space-y-6">
-                @foreach (string? genre in _tracksByGenre.Keys)
+                @foreach (string? key in _groupedTracks.Keys)
                 {
                     <div class="bg-[#232a3b] rounded-lg shadow-lg overflow-hidden">
                         <div class="bg-[#2c3549] p-4">
                             <h2 class="text-xl font-semibold text-white">
-                                @genre (@_tracksByGenre[genre].Count tracks)
+                                @key (@_groupedTracks[key].Count tracks)
                             </h2>
                         </div>
                         <div class="p-4">
@@ -87,6 +128,7 @@
                                         @if (!_showCompactView)
                                         {
                                             <th class="pb-2 font-medium">Album</th>
+                                            <th class="pb-2 font-medium">Release Date</th>
                                         }
                                     </tr>
                                     </thead>
@@ -94,7 +136,7 @@
                                     @{
                                         int trackNumber = 1;
                                     }
-                                    @foreach (SpotifyTrack? track in _tracksByGenre[genre])
+                                    @foreach (SpotifyTrack? track in _groupedTracks[key])
                                     {
                                         <tr class="hover:bg-gray-800/30 border-b border-gray-700/50">
                                             <td class="py-3 text-gray-400">@trackNumber</td>
@@ -125,6 +167,7 @@
                                             @if (!_showCompactView)
                                             {
                                                 <td class="py-3 text-gray-400">@track.Album?.Name</td>
+                                                <td class="py-3 text-gray-400">@track.Album?.ReleaseDate</td>
                                             }
                                         </tr>
                                         trackNumber++;
@@ -142,13 +185,19 @@
 
 @code {
 
+    private enum SortingOption {
+        Genre,
+        Decade
+    }
+
     [Parameter]
     public string PlaylistId { get; set; } = string.Empty;
 
-    private Dictionary<string, List<SpotifyTrack>> _tracksByGenre = [];
+    private List<SpotifyTrack> _tracks = [];
+    private Dictionary<string, List<SpotifyTrack>> _groupedTracks = [];
     private bool _loading = true;
     private bool _showCompactView = false;
-    private int _totalTracks = 0;
+    private SortingOption _sortingBy = SortingOption.Genre;
 
     protected override async Task OnInitializedAsync()
     {
@@ -165,10 +214,61 @@
     {
         _loading = true;
 
-        _tracksByGenre = await SpotifyService.SortTracksByGenreAsync(PlaylistId);
-        _totalTracks = _tracksByGenre.Sum(g => g.Value.Count);
+        IReadOnlyList<SpotifyTrack> tracks = await SpotifyService.GetPlaylistTracksAsync(PlaylistId);
+        _tracks = [..tracks];
+
+        GroupTracks();
 
         _loading = false;
+    }
+
+    private void SetSortingOption(SortingOption option)
+    {
+        if (_sortingBy != option)
+        {
+            _sortingBy = option;
+            GroupTracks();
+        }
+    }
+
+    private void GroupTracks()
+    {
+        if (_sortingBy == SortingOption.Genre)
+        {
+            _groupedTracks = _tracks.GroupBy(t => string.IsNullOrEmpty(t.Genre) ? "unknown" : t.Genre)
+                                    .ToDictionary(g => g.Key, g => g.ToList());
+        }
+        else
+        {
+            _groupedTracks = _tracks.GroupBy(GetDecadeFromTrack)
+                                    .OrderBy(g => g.Key)
+                                    .ToDictionary(g => g.Key, g => g.ToList());
+        }
+    }
+
+    private string GetDecadeFromTrack(SpotifyTrack track)
+    {
+        if (string.IsNullOrEmpty(track.Album.ReleaseDate) || track.Album.ReleaseDate.Length < 4)
+        {
+            return "unknown";
+        }
+
+        if (int.TryParse(track.Album.ReleaseDate[..4], out int year))
+        {
+            int decade = year / 10 * 10;
+            return $"{decade}s";
+        }
+
+        return "unknown";
+    }
+
+    private string GetSortingButtonClass(SortingOption option)
+    {
+        const string baseClass = "px-4 py-2 text-sm font-medium transition-all duration-200";
+        const string activeClass = "bg-green-600 text-white rounded-full shadow-inner";
+        const string inactiveClass = "bg-transparent text-gray-300 hover:text-white";
+
+        return $"{baseClass} {(_sortingBy == option ? activeClass : inactiveClass)}";
     }
 
     private void ToggleView() => _showCompactView = !_showCompactView;
