@@ -1,5 +1,5 @@
-﻿@using UI.Services
-@inject SpotifyStateService SpotifyState
+﻿@using UI.Infrastructure.Spotify
+@inject SpotifyAuthSessionManager SpotifyAuthSessionManager
 
 <div class="w-64 bg-[#1a2234]">
     <div class="px-3 py-4">
@@ -35,7 +35,7 @@
                     </span>
                 </NavLink>
             </li>
-            @if (SpotifyState.IsAuthenticated())
+            @if (SpotifyAuthSessionManager.IsAuthenticated())
             {
                 <li>
                     <a href="/spotify-auth"
@@ -56,4 +56,3 @@
         </ul>
     </div>
 </div>
-

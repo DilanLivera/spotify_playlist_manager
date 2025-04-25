@@ -1,6 +1,6 @@
 ﻿@page "/"
-@using UI.Services
-@inject SpotifyStateService SpotifyState
+@using UI.Infrastructure.Spotify
+@inject SpotifyAuthSessionManager SpotifyAuthSessionManager
 @inject NavigationManager NavigationManager
 
 <PageTitle>Spotify Playlist Manager</PageTitle>
@@ -14,7 +14,7 @@
             Sort your Spotify playlists by genre and manage your music collection
         </p>
 
-        @if (!SpotifyState.IsAuthenticated())
+        @if (!SpotifyAuthSessionManager.IsAuthenticated())
         {
             <a href="/spotify-auth"
                class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-full">
@@ -89,7 +89,7 @@
 @code {
     protected override void OnInitialized()
     {
-        if (SpotifyState.IsAuthenticated())
+        if (SpotifyAuthSessionManager.IsAuthenticated())
         {
             NavigationManager.NavigateTo(uri: "/playlists");
         }

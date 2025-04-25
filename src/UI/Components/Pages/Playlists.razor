@@ -1,8 +1,8 @@
 @page "/playlists"
+@using UI.Infrastructure.Spotify
 @using UI.Models
-@using UI.Services
 @inject SpotifyService SpotifyService
-@inject SpotifyStateService SpotifyState
+@inject SpotifyAuthSessionManager SpotifyAuthSessionManager
 @inject NavigationManager NavigationManager
 @rendermode InteractiveServer
 
@@ -82,7 +82,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        if (!SpotifyState.IsAuthenticated())
+        if (!SpotifyAuthSessionManager.IsAuthenticated())
         {
             NavigationManager.NavigateTo(uri: "/spotify-auth");
             return;
@@ -95,8 +95,7 @@
     {
         _loading = true;
 
-        string accessToken = SpotifyState.GetAccessToken();
-        _playlists = await SpotifyService.GetUserPlaylistsAsync(accessToken);
+        _playlists = await SpotifyService.GetUserPlaylistsAsync();
 
         _loading = false;
     }

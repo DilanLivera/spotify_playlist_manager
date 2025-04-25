@@ -3,7 +3,7 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.WebUtilities;
 
-namespace UI.Services;
+namespace UI.Infrastructure.Spotify;
 
 public sealed class SpotifyAuthService
 {
@@ -11,9 +11,10 @@ public sealed class SpotifyAuthService
     private readonly IConfiguration _configuration;
     private readonly ILogger<SpotifyAuthService> _logger;
 
-    public SpotifyAuthService(HttpClient httpClient,
-                              IConfiguration configuration,
-                              ILogger<SpotifyAuthService> logger)
+    public SpotifyAuthService(
+        HttpClient httpClient,
+        IConfiguration configuration,
+        ILogger<SpotifyAuthService> logger)
     {
         _httpClient = httpClient;
         _configuration = configuration;
@@ -32,14 +33,14 @@ public sealed class SpotifyAuthService
         }
 
         Dictionary<string, string?> queryParams = new()
-                                                 {
-                                                     { "client_id", clientId },
-                                                     { "response_type", "code" },
-                                                     { "redirect_uri", redirectUri },
-                                                     // https://developer.spotify.com/documentation/web-api/concepts/scopes
-                                                     // please use %20 instead of " " when adding scopes.
-                                                     { "scope", "playlist-read-private user-read-recently-played" }
-                                                 };
+                                                  {
+                                                      { "client_id", clientId },
+                                                      { "response_type", "code" },
+                                                      { "redirect_uri", redirectUri },
+                                                      // https://developer.spotify.com/documentation/web-api/concepts/scopes
+                                                      // please use %20 instead of " " when adding scopes.
+                                                      { "scope", "playlist-read-private user-read-recently-played" }
+                                                  };
 
         return QueryHelpers.AddQueryString(uri: "https://accounts.spotify.com/authorize", queryParams);
     }
@@ -61,12 +62,7 @@ public sealed class SpotifyAuthService
             string auth = Convert.ToBase64String(inArray: Encoding.UTF8.GetBytes($"{clientId}:{clientSecret}"));
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(scheme: "Basic", auth);
 
-            Dictionary<string, string> parameters = new()
-                                                    {
-                                                        { "grant_type", "authorization_code" },
-                                                        { "code", code },
-                                                        { "redirect_uri", redirectUri }
-                                                    };
+            Dictionary<string, string> parameters = new() { { "grant_type", "authorization_code" }, { "code", code }, { "redirect_uri", redirectUri } };
             FormUrlEncodedContent content = new(parameters);
 
             HttpResponseMessage response = await _httpClient.PostAsync(requestUri: "https://accounts.spotify.com/api/token", content);
@@ -104,11 +100,7 @@ public sealed class SpotifyAuthService
             string auth = Convert.ToBase64String(inArray: Encoding.UTF8.GetBytes($"{clientId}:{clientSecret}"));
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(scheme: "Basic", auth);
 
-            Dictionary<string,string> parameters = new()
-                                                   {
-                                                       { "grant_type", "refresh_token" },
-                                                       { "refresh_token", refreshToken }
-                                                   };
+            Dictionary<string, string> parameters = new() { { "grant_type", "refresh_token" }, { "refresh_token", refreshToken } };
             FormUrlEncodedContent content = new(parameters);
 
             HttpResponseMessage response = await _httpClient.PostAsync(requestUri: "https://accounts.spotify.com/api/token", content);

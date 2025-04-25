@@ -1,8 +1,8 @@
 @page "/playlist/{PlaylistId}"
+@using UI.Infrastructure.Spotify
 @using UI.Models
-@using UI.Services
 @inject SpotifyService SpotifyService
-@inject SpotifyStateService SpotifyState
+@inject SpotifyAuthSessionManager SpotifyAuthSessionManager
 @inject NavigationManager NavigationManager
 @rendermode InteractiveServer
 
@@ -152,7 +152,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        if (!SpotifyState.IsAuthenticated())
+        if (!SpotifyAuthSessionManager.IsAuthenticated())
         {
             NavigationManager.NavigateTo(uri: "/spotify-auth");
             return;
@@ -165,8 +165,7 @@
     {
         _loading = true;
 
-        string accessToken = SpotifyState.GetAccessToken();
-        _tracksByGenre = await SpotifyService.SortTracksByGenreAsync(accessToken, PlaylistId);
+        _tracksByGenre = await SpotifyService.SortTracksByGenreAsync(PlaylistId);
         _totalTracks = _tracksByGenre.Sum(g => g.Value.Count);
 
         _loading = false;
