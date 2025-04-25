@@ -46,13 +46,17 @@ public sealed class SpotifyService
         }
     }
 
-    public async Task<IReadOnlyList<SpotifyTrack>> GetPlaylistTracksAsync(string playlistId)
+    public async Task<IReadOnlyList<SpotifyTrack>> GetPlaylistTracksAsync(string playlistId) => await GetPlaylistTracksAsync(playlistId, offset: 0, limit: 100);
+
+    public async Task<IReadOnlyList<SpotifyTrack>> GetPlaylistTracksAsync(string playlistId, int offset, int limit)
     {
         try
         {
             Func<Task<SpotifyTrack[]>> apiCall = async () =>
             {
-                PlaylistTrackResponse trackResponse = await _httpClient.GetFromJsonAsync<PlaylistTrackResponse>(requestUri: $"playlists/{playlistId}/tracks") ?? throw new InvalidOperationException("Response can not be null");
+                string requestUri = $"playlists/{playlistId}/tracks?offset={offset}&limit={limit}";
+
+                PlaylistTrackResponse trackResponse = await _httpClient.GetFromJsonAsync<PlaylistTrackResponse>(requestUri) ?? throw new InvalidOperationException("Response can not be null");
 
                 SpotifyTrack[] tracks = trackResponse.Items
                                                      .Select(i => i.Track)
@@ -75,7 +79,34 @@ public sealed class SpotifyService
         catch (Exception ex)
         {
             _logger.LogError(ex,
-                             "Error getting playlist tracks for playlist {PlaylistId}",
+                             "Error getting playlist tracks for playlist {PlaylistId} (offset: {Offset}, limit: {Limit})",
+                             playlistId,
+                             offset,
+                             limit);
+            throw;
+        }
+    }
+
+    public async Task<SpotifyPlaylist> GetPlaylistAsync(string playlistId)
+    {
+        try
+        {
+            Func<Task<SpotifyPlaylist>> apiCall = async () =>
+            {
+                string requestUri = $"playlists/{playlistId}";
+
+                SpotifyPlaylist playlist = await _httpClient.GetFromJsonAsync<SpotifyPlaylist>(requestUri) ??
+                                           throw new InvalidOperationException("Response can not be null");
+
+                return playlist;
+            };
+
+            return await ExecuteWithTokenRefreshAsync(apiCall);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                             "Error getting playlist details for playlist {PlaylistId}",
                              playlistId);
             throw;
         }
@@ -112,7 +143,7 @@ public sealed class SpotifyService
         }
     }
 
-    private async Task<T> ExecuteWithTokenRefreshAsync<T>(Func<Task<T>> apiCall) where T : class
+    private async Task<T> ExecuteWithTokenRefreshAsync<T>(Func<Task<T>> apiCall)
     {
         try
         {
