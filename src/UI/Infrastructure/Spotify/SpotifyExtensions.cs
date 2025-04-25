@@ -57,7 +57,7 @@ public static class SpotifyExtensions
 
                        spotifyAuthSessionManager.StoreTokens(accessToken, refreshToken);
 
-                       return Results.Redirect(url: "/playlists");
+                       return Results.Redirect(url: "/");
                    });
 
         return app;
