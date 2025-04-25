@@ -18,5 +18,7 @@ public sealed class SpotifyAuthSessionManager
 
     public string GetRefreshToken() => _httpContextAccessor.HttpContext?.Session.GetString(key: SpotifyRefreshToken) ?? string.Empty;
 
+    public void UpdateAccessToken(string newAccessToken) => _httpContextAccessor.HttpContext?.Session.SetString(SpotifyAccessToken, newAccessToken);
+
     public bool IsAuthenticated() => !string.IsNullOrEmpty(GetAccessToken());
 }

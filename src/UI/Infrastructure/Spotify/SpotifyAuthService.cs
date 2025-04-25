@@ -10,15 +10,18 @@ public sealed class SpotifyAuthService
     private readonly HttpClient _httpClient;
     private readonly IConfiguration _configuration;
     private readonly ILogger<SpotifyAuthService> _logger;
+    private readonly SpotifyAuthSessionManager _sessionManager;
 
     public SpotifyAuthService(
         HttpClient httpClient,
         IConfiguration configuration,
-        ILogger<SpotifyAuthService> logger)
+        ILogger<SpotifyAuthService> logger,
+        SpotifyAuthSessionManager sessionManager)
     {
         _httpClient = httpClient;
         _configuration = configuration;
         _logger = logger;
+        _sessionManager = sessionManager;
     }
 
     public string GetAuthorizationUrl()
@@ -116,5 +119,30 @@ public sealed class SpotifyAuthService
             _logger.LogError(ex, "Error refreshing access token");
             return string.Empty;
         }
+    }
+
+    /// <summary>
+    /// Refreshes the access token using the stored refresh token and updates the session.
+    /// </summary>
+    /// <returns>True if token refresh was successful, false otherwise.</returns>
+    public async Task<bool> RefreshTokenAsync()
+    {
+        string refreshToken = _sessionManager.GetRefreshToken();
+        if (string.IsNullOrEmpty(refreshToken))
+        {
+            _logger.LogWarning("No refresh token available for token refresh");
+            return false;
+        }
+
+        string newAccessToken = await RefreshAccessTokenAsync(refreshToken);
+        if (string.IsNullOrEmpty(newAccessToken))
+        {
+            _logger.LogError("Failed to refresh access token");
+            return false;
+        }
+
+        _sessionManager.UpdateAccessToken(newAccessToken);
+        _logger.LogInformation("Successfully refreshed access token");
+        return true;
     }
 }
