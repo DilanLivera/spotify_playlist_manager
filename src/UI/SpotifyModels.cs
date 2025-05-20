@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace UI.Models;
+namespace UI;
 
 public sealed class SpotifyPlaylist
 {
@@ -59,7 +59,7 @@ public sealed class SpotifyTrack
 
     public string Genre { get; set; } = string.Empty;
 
-    public string GetArtistsString() => string.Join(", ", Artists.Select(a => a.Name));
+    public string GetArtistsAsString() => string.Join(", ", Artists.Select(a => a.Name));
 }
 
 public sealed class SpotifyArtist

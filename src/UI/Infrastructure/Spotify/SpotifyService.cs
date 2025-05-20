@@ -1,5 +1,4 @@
 using System.Net.Http.Headers;
-using UI.Models;
 
 namespace UI.Infrastructure.Spotify;
 

@@ -1,6 +1,5 @@
 @page "/playlist/{PlaylistId}"
 @using UI.Infrastructure.Spotify
-@using UI.Models
 @inject SpotifyService SpotifyService
 @inject SpotifyAuthSessionManager SpotifyAuthSessionManager
 @inject NavigationManager NavigationManager
@@ -338,7 +337,7 @@
                                                     </td>
                                                 }
                                                 <td class="py-3 text-white font-medium">@track.Name</td>
-                                                <td class="py-3 text-gray-400">@track.GetArtistsString()</td>
+                                                <td class="py-3 text-gray-400">@track.GetArtistsAsString()</td>
                                                 @if (!_showCompactView)
                                                 {
                                                     <td class="py-3 text-gray-400">@track.Album?.Name</td>

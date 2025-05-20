@@ -1,6 +1,5 @@
 ﻿@page "/"
 @using UI.Infrastructure.Spotify
-@using UI.Models
 @inject SpotifyService SpotifyService
 @inject SpotifyAuthSessionManager SpotifyAuthSessionManager
 @inject NavigationManager NavigationManager
@@ -87,13 +86,6 @@
             NavigationManager.NavigateTo(uri: "/spotify-auth");
             return;
         }
-
-        await LoadPlaylistsAsync();
-    }
-
-    private async Task LoadPlaylistsAsync()
-    {
-        _loading = true;
 
         _playlists = await SpotifyService.GetUserPlaylistsAsync();
 
