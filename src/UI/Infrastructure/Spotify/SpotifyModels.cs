@@ -108,3 +108,30 @@ public sealed class UserPlaylistsResponse
     [JsonPropertyName("items")]
     public List<SpotifyPlaylist> Items { get; init; } = [];
 }
+
+public sealed class SpotifyUser
+{
+    [JsonPropertyName("id")]
+    public string Id { get; init; } = string.Empty;
+
+    [JsonPropertyName("display_name")]
+    public string DisplayName { get; init; } = string.Empty;
+}
+
+public sealed record CreatePlaylistRequest
+{
+    [JsonPropertyName("name")]
+    public required string Name { get; init; }
+
+    [JsonPropertyName("description")]
+    public string? Description { get; init; }
+
+    [JsonPropertyName("public")]
+    public bool Public { get; init; } = false;
+}
+
+public sealed record AddTracksRequest
+{
+    [JsonPropertyName("uris")]
+    public required IEnumerable<string> Uris { get; init; }
+}

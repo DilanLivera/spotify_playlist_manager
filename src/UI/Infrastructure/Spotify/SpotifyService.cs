@@ -170,6 +170,167 @@ public sealed class SpotifyService
         return sortedTracks;
     }
 
+    public async Task<SpotifyUser> GetCurrentUserAsync()
+    {
+        using Activity? activity = ObservabilityExtensions.StartActivity("GetCurrentUser");
+
+        _logger.LogDebug("Fetching current user from Spotify API");
+
+        try
+        {
+            Func<Task<SpotifyUser>> apiCall = async () =>
+            {
+                SpotifyUser user = await _httpClient.GetFromJsonAsync<SpotifyUser>(requestUri: "me")
+                    ?? throw new InvalidOperationException("Response can not be null");
+
+                return user;
+            };
+
+            SpotifyUser user = await ExecuteWithTokenRefreshAsync(apiCall);
+
+            _logger.LogInformation("Fetched current user {UserId}", user.Id);
+            activity?.SetTag("user.id", user.Id);
+
+            return user;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting current user");
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+
+            throw;
+        }
+    }
+
+    public async Task<SpotifyPlaylist> CreatePlaylistAsync(string name, string? description = null)
+    {
+        using Activity? activity = ObservabilityExtensions.StartActivity("CreatePlaylist");
+        activity?.SetTag("playlist.name", name);
+
+        _logger.LogDebug("Creating playlist {PlaylistName}", name);
+
+        try
+        {
+            Func<Task<SpotifyPlaylist>> apiCall = async () =>
+            {
+                SpotifyUser user = await GetCurrentUserAsync();
+                string requestUri = $"users/{user.Id}/playlists";
+
+                CreatePlaylistRequest request = new()
+                {
+                    Name = name,
+                    Description = description,
+                    Public = false
+                };
+
+                HttpResponseMessage response = await _httpClient.PostAsJsonAsync(requestUri, request);
+                response.EnsureSuccessStatusCode();
+
+                SpotifyPlaylist playlist = await response.Content.ReadFromJsonAsync<SpotifyPlaylist>()
+                    ?? throw new InvalidOperationException("Response can not be null");
+
+                return playlist;
+            };
+
+            SpotifyPlaylist playlist = await ExecuteWithTokenRefreshAsync(apiCall);
+
+            _logger.LogInformation("Created playlist {PlaylistName} ({PlaylistId})", playlist.Name, playlist.Id);
+            activity?.SetTag("playlist.id", playlist.Id);
+
+            return playlist;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating playlist {PlaylistName}", name);
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+
+            throw;
+        }
+    }
+
+    public async Task AddTracksToPlaylistAsync(string playlistId, IEnumerable<string> trackUris)
+    {
+        using Activity? activity = ObservabilityExtensions.StartActivity("AddTracksToPlaylist");
+        activity?.SetTag("playlist.id", playlistId);
+
+        List<string> uriList = trackUris.ToList();
+        _logger.LogDebug("Adding {TrackCount} tracks to playlist {PlaylistId}", uriList.Count, playlistId);
+
+        try
+        {
+            Func<Task<bool>> apiCall = async () =>
+            {
+                string requestUri = $"playlists/{playlistId}/tracks";
+
+                AddTracksRequest request = new() { Uris = uriList };
+
+                HttpResponseMessage response = await _httpClient.PostAsJsonAsync(requestUri, request);
+                response.EnsureSuccessStatusCode();
+
+                return true;
+            };
+
+            await ExecuteWithTokenRefreshAsync(apiCall);
+
+            _logger.LogInformation("Added {TrackCount} tracks to playlist {PlaylistId}", uriList.Count, playlistId);
+            activity?.SetTag("track.count", uriList.Count);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error adding tracks to playlist {PlaylistId}", playlistId);
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+
+            throw;
+        }
+    }
+
+    public async Task<SpotifyPlaylist?> FindPlaylistByNameAsync(string name)
+    {
+        using Activity? activity = ObservabilityExtensions.StartActivity("FindPlaylistByName");
+        activity?.SetTag("playlist.name", name);
+
+        _logger.LogDebug("Searching for playlist by name: {PlaylistName}", name);
+
+        List<SpotifyPlaylist> playlists = await GetUserPlaylistsAsync();
+        SpotifyPlaylist? playlist = playlists.FirstOrDefault(p =>
+            p.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+
+        if (playlist != null)
+        {
+            _logger.LogInformation("Found existing playlist {PlaylistName} ({PlaylistId})", playlist.Name, playlist.Id);
+            activity?.SetTag("playlist.id", playlist.Id);
+            activity?.SetTag("playlist.found", true);
+        }
+        else
+        {
+            _logger.LogInformation("Playlist {PlaylistName} not found", name);
+            activity?.SetTag("playlist.found", false);
+        }
+
+        return playlist;
+    }
+
+    public async Task<SpotifyPlaylist> GetOrCreatePlaylistAsync(string name, string? description = null)
+    {
+        using Activity? activity = ObservabilityExtensions.StartActivity("GetOrCreatePlaylist");
+        activity?.SetTag("playlist.name", name);
+
+        _logger.LogDebug("Getting or creating playlist: {PlaylistName}", name);
+
+        SpotifyPlaylist? existingPlaylist = await FindPlaylistByNameAsync(name);
+
+        if (existingPlaylist != null)
+        {
+            activity?.SetTag("playlist.created", false);
+            return existingPlaylist;
+        }
+
+        SpotifyPlaylist newPlaylist = await CreatePlaylistAsync(name, description);
+        activity?.SetTag("playlist.created", true);
+
+        return newPlaylist;
+    }
+
     private async Task<string> GetArtistPrimaryGenreAsync(string artistId)
     {
         _logger.LogDebug("Fetching genre for artist {ArtistId}", artistId);
