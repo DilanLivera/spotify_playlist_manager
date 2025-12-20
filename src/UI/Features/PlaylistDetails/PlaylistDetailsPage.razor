@@ -1,5 +1,6 @@
 @page "/playlist/{PlaylistId}"
 @using UI.Features.PlaylistDetails
+@using UI.Features.Shared.Domain
 @using UI.Infrastructure.Spotify
 @inject SpotifyService SpotifyService
 @inject SpotifyAuthSessionManager SpotifyAuthSessionManager
@@ -31,9 +32,9 @@
         {
             <div class="mb-8">
                 <div class="flex items-start gap-6">
-                    @if (!string.IsNullOrEmpty(_playlist.GetPlaylistImageUrl()))
+                    @if (!string.IsNullOrEmpty(_playlist.ImageUrl))
                     {
-                        <img src="@_playlist.GetPlaylistImageUrl()"
+                        <img src="@_playlist.ImageUrl"
                              alt="@_playlist.Name"
                              class="w-24 h-24 object-cover rounded-lg shadow-lg"/>
                     }
@@ -60,7 +61,7 @@
                                  xmlns="http://www.w3.org/2000/svg">
                                 <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z"/>
                             </svg>
-                            @_playlist.Tracks.Total tracks
+                            @_playlist.TrackCount tracks
                         </div>
                     </div>
                 </div>
@@ -391,16 +392,16 @@
                                         @{
                                             int trackNumber = 1;
                                         }
-                                        @foreach (SpotifyTrack? track in _groupedTracks[key])
+                                        @foreach (Track? track in _groupedTracks[key])
                                         {
                                             <tr class="hover:bg-gray-800/30 border-b border-gray-700/50">
                                                 <td class="py-3 text-gray-400">@trackNumber</td>
                                                 @if (!_showCompactView)
                                                 {
                                                     <td class="py-3">
-                                                        @if (!string.IsNullOrEmpty(track.Album.GetAlbumImageUrl()))
+                                                        @if (!string.IsNullOrEmpty(track.Album.ImageUrl))
                                                         {
-                                                            <img src="@track.Album.GetAlbumImageUrl()"
+                                                            <img src="@track.Album.ImageUrl"
                                                                  alt="@track.Album.Name"
                                                                  class="w-10 h-10 rounded"/>
                                                         }
@@ -418,7 +419,7 @@
                                                     </td>
                                                 }
                                                 <td class="py-3 text-white font-medium">@track.Name</td>
-                                                <td class="py-3 text-gray-400">@track.GetArtistsAsString()</td>
+                                                <td class="py-3 text-gray-400">@track.GetArtistDisplay()</td>
                                                 @if (!_showCompactView)
                                                 {
                                                     <td class="py-3 text-gray-400">@track.Album?.Name</td>
@@ -449,8 +450,8 @@
     [Parameter]
     public string PlaylistId { get; set; } = string.Empty;
 
-    private readonly List<SpotifyTrack> _tracks = [];
-    private Dictionary<string, List<SpotifyTrack>> _groupedTracks = [];
+    private readonly List<Track> _tracks = [];
+    private Dictionary<string, List<Track>> _groupedTracks = [];
     private bool _isLoading = true;
     private bool _showCompactView = false;
     private SortingOption _sortingBy = SortingOption.Genre;
@@ -459,7 +460,7 @@
     private bool _loadingMore = false;
     private bool _hasMoreTracks = true;
     private readonly HashSet<string> _collapsedSections = [];
-    private SpotifyPlaylist? _playlist;
+    private Playlist? _playlist;
 
     // Custom Year Range Filter
     private int? _startYear = 2000;
@@ -475,7 +476,7 @@
 
     protected override void OnInitialized()
     {
-        _groupedTracks = new Dictionary<string, List<SpotifyTrack>>();
+        _groupedTracks = new Dictionary<string, List<Track>>();
         _destinationPlaylistName = SelectedFilter.SuggestedPlaylistName;
 
         if (!SpotifyAuthSessionManager.IsAuthenticated())
@@ -527,7 +528,7 @@
             _loadingMore = true;
             StateHasChanged();
 
-            IReadOnlyList<SpotifyTrack> newTracks = await SpotifyService.GetPlaylistTracksAsync(PlaylistId, _offset, BatchSize);
+            IReadOnlyList<Track> newTracks = await SpotifyService.GetPlaylistTracksAsync(PlaylistId, _offset, BatchSize);
 
             if (newTracks.Count > 0)
             {
@@ -569,31 +570,15 @@
     {
         if (_sortingBy == SortingOption.Genre)
         {
-            _groupedTracks = _tracks.GroupBy(t => string.IsNullOrEmpty(t.Genre) ? "unknown" : t.Genre)
+            _groupedTracks = _tracks.GroupBy(t => t.Genre)
                                     .ToDictionary(g => g.Key, g => g.ToList());
         }
         else
         {
-            _groupedTracks = _tracks.GroupBy(GetDecadeFromTrack)
+            _groupedTracks = _tracks.GroupBy(t => t.GetDecade())
                                     .OrderBy(g => g.Key)
                                     .ToDictionary(g => g.Key, g => g.ToList());
         }
-    }
-
-    private string GetDecadeFromTrack(SpotifyTrack track)
-    {
-        if (string.IsNullOrEmpty(track.Album.ReleaseDate) || track.Album.ReleaseDate.Length < 4)
-        {
-            return "unknown";
-        }
-
-        if (int.TryParse(track.Album.ReleaseDate[..4], out int year))
-        {
-            int decade = year / 10 * 10;
-            return $"{decade}s";
-        }
-
-        return "unknown";
     }
 
     private string GetSortingButtonClass(SortingOption option)
@@ -619,7 +604,7 @@
 
     private int GetMatchingTracksCount() => _tracks.Count(SelectedFilter.Matches);
 
-    private List<SpotifyTrack> GetMatchingTracks() => _tracks.Where(SelectedFilter.Matches).ToList();
+    private List<Track> GetMatchingTracks() => _tracks.Where(SelectedFilter.Matches).ToList();
 
     private async Task CopyTracksToPlaylistAsync()
     {
@@ -628,7 +613,7 @@
             return;
         }
 
-        List<SpotifyTrack> matchingTracks = GetMatchingTracks();
+        List<Track> matchingTracks = GetMatchingTracks();
 
         if (matchingTracks.Count == 0)
         {
@@ -644,12 +629,12 @@
             StateHasChanged();
 
             // Get or create the destination playlist
-            SpotifyPlaylist destinationPlaylist = await SpotifyService.GetOrCreatePlaylistAsync(
+            Playlist destinationPlaylist = await SpotifyService.GetOrCreatePlaylistAsync(
                 name: _destinationPlaylistName.Trim(),
                 description: $"Tracks filtered by: {SelectedFilter.Name}");
 
             // Convert track IDs to Spotify URIs
-            IEnumerable<string> trackUris = matchingTracks.Select(t => $"spotify:track:{t.Id}");
+            IEnumerable<string> trackUris = matchingTracks.Select(t => t.ToSpotifyUri());
 
             // Add tracks to playlist
             await SpotifyService.AddTracksToPlaylistAsync(destinationPlaylist.Id, trackUris);
