@@ -47,7 +47,7 @@ public sealed class SpotifyAuthService
                                                       { "redirect_uri", redirectUri },
                                                       // https://developer.spotify.com/documentation/web-api/concepts/scopes
                                                       // please use %20 instead of " " when adding scopes.
-                                                      { "scope", "playlist-read-private user-read-recently-played" }
+                                                      { "scope", "playlist-read-private playlist-modify-private playlist-modify-public user-read-recently-played" }
                                                   };
 
         _logger.LogDebug("Authorization URL built with redirect URI {RedirectUri}", redirectUri);
