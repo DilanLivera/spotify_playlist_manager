@@ -80,5 +80,55 @@ The commit-msg hook validates:
 ## Features
 
 - View all your Spotify playlists
-- Sort playlist tracks by genre
+- Sort playlist tracks by genre or decade
 - Compact and detailed views of your organized music
+- Copy tracks to another playlist using configurable filters (e.g., songs from 2000 onwards)
+
+## Track Filter Architecture
+
+The track filter system uses a Strategy pattern to allow flexible, composable filtering of playlist tracks.
+
+### Filter Interface
+
+All filters implement `ITrackFilter`:
+
+```csharp
+public interface ITrackFilter
+{
+    string Name { get; }
+    string SuggestedPlaylistName { get; }
+    bool Matches(SpotifyTrack track);
+}
+```
+
+### Available Filters
+
+| Filter | Description |
+|--------|-------------|
+| `YearRangeFilter` | Filter tracks by release year range (e.g., 2000+) |
+| `CompositeFilter` | Combine multiple filters with AND logic |
+
+### Adding New Filters
+
+To add a new filter, create a class implementing `ITrackFilter`:
+
+```csharp
+public sealed class GenreFilter(string genre) : ITrackFilter
+{
+    public string Name => $"Genre: {genre}";
+    public string SuggestedPlaylistName => $"{genre} Tracks";
+    public bool Matches(SpotifyTrack track) => track.Genre.Equals(genre, StringComparison.OrdinalIgnoreCase);
+}
+```
+
+### Combining Multiple Filters
+
+Use `CompositeFilter` to combine filters with AND logic:
+
+```csharp
+ITrackFilter filter = new CompositeFilter([
+    new YearRangeFilter(minYear: 2000),
+    new GenreFilter("Rock")
+]);
+// Matches tracks from 2000+ AND genre is Rock
+```
