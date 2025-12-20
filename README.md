@@ -113,6 +113,16 @@ The Infrastructure layer handles technical details:
 - **Spotify API Client**: HTTP communication with Spotify Web API
 - **DTOs**: Data Transfer Objects for API serialization (decorated with `[JsonPropertyName]`)
 - **Mapping**: Extension methods to convert DTOs to Domain entities (`MapToDomain()`)
+- **Batching**: Artist genre requests are batched (up to 50 per request) to minimize API calls and improve performance
+
+#### API Optimization
+
+The `SpotifyService` uses bulk fetching to minimize API calls:
+- **Bulk Artist Genres**: Uses Spotify's `/v1/artists?ids=...` endpoint to fetch up to 50 artist genres per request
+- **Automatic Loading**: Playlist tracks are automatically loaded in the background in batches of 100
+- **Cancellation Support**: Background loading stops immediately when the user navigates away using `CancellationToken`
+
+This reduces API calls by ~98% compared to individual requests per track.
 
 ### Benefits
 
