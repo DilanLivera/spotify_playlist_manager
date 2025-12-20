@@ -2,6 +2,8 @@
 
 Blazor Server app (.NET 9.0) for viewing and sorting Spotify playlist tracks by genre.
 
+> **AI Maintenance:** When adding new infrastructure, patterns, or conventions to the codebase, update this file to reflect those changes.
+
 ## Tech Stack
 
 - Blazor Server (Interactive Server render mode)
