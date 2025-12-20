@@ -17,7 +17,7 @@ src/UI/
 ├── Features/
 │   ├── Shared/             # Shared components (Header, Sidebar)
 │   └── {Feature}/          # Page.razor, Service.cs, Models.cs
-├── Infrastructure/         # Technical concerns (Auth/, Spotify/, DB, caching)
+├── Infrastructure/         # Technical concerns (Auth/, Spotify/, Observability/)
 └── wwwroot/app.css
 ```
 
@@ -53,6 +53,25 @@ src/UI/
 - Endpoints: `/me/playlists`, `/playlists/{id}`, `/playlists/{id}/tracks`, `/artists/{id}`
 - Auto token refresh via `ExecuteWithTokenRefreshAsync<T>()`
 - Auth endpoints: `/spotify-auth` (initiate), `/callback` (OAuth)
+
+## Observability
+
+OpenTelemetry configured via `AddObservability()` in `Infrastructure/Observability/`.
+
+**Logging patterns:**
+- Inject `ILogger<T>` in services
+- `LogDebug` before operations, `LogInformation` after success with counts
+- `LogWarning` for recoverable issues, `LogError` for failures
+- Use structured logging: `_logger.LogInformation("Fetched {Count} items", items.Count)`
+
+**Custom traces:**
+```csharp
+using Activity? activity = ObservabilityExtensions.StartActivity("OperationName");
+activity?.SetTag("key", value);
+activity?.SetStatus(ActivityStatusCode.Error, ex.Message);  // on failure
+```
+
+**Config:** Set `Observability:OtlpEndpoint` for OTLP export (Jaeger, Aspire), otherwise Console.
 
 ## Git Commits
 
