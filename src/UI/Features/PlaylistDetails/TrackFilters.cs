@@ -1,4 +1,4 @@
-using UI.Infrastructure.Spotify;
+using UI.Features.Shared.Domain;
 
 namespace UI.Features.PlaylistDetails;
 
@@ -20,7 +20,7 @@ public interface ITrackFilter
     /// <summary>
     /// Determines if a track matches the filter criteria.
     /// </summary>
-    bool Matches(SpotifyTrack track);
+    bool Matches(Track track);
 }
 
 /// <summary>
@@ -36,9 +36,9 @@ public sealed class YearRangeFilter(int minYear, int? maxYear = null) : ITrackFi
         ? $"Classics {minYear}-{maxYear}"
         : $"Modern Classics ({minYear}+)";
 
-    public bool Matches(SpotifyTrack track)
+    public bool Matches(Track track)
     {
-        int? year = ParseReleaseYear(track.Album.ReleaseDate);
+        int? year = track.GetReleaseYear();
 
         if (!year.HasValue)
         {
@@ -56,21 +56,6 @@ public sealed class YearRangeFilter(int minYear, int? maxYear = null) : ITrackFi
         }
 
         return true;
-    }
-
-    private static int? ParseReleaseYear(string releaseDate)
-    {
-        if (string.IsNullOrEmpty(releaseDate) || releaseDate.Length < 4)
-        {
-            return null;
-        }
-
-        if (int.TryParse(releaseDate[..4], out int year))
-        {
-            return year;
-        }
-
-        return null;
     }
 }
 
@@ -95,6 +80,6 @@ public sealed class CompositeFilter : ITrackFilter
 
     public string SuggestedPlaylistName => _filters.First().SuggestedPlaylistName;
 
-    public bool Matches(SpotifyTrack track) => _filters.All(f => f.Matches(track));
+    public bool Matches(Track track) => _filters.All(f => f.Matches(track));
 }
 
