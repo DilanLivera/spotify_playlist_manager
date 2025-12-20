@@ -194,7 +194,8 @@
                 @* Filter Selection *@
                 <div>
                     <label class="block text-gray-400 text-sm mb-2">Filter</label>
-                    <select @bind="_selectedFilterIndex"
+                    <select value="@_selectedFilterIndex"
+                            @onchange="OnFilterChanged"
                             class="w-full bg-[#1A1E2A] text-white border border-gray-600 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 focus:border-transparent">
                         @for (int i = 0; i < _availableFilters.Count; i++)
                         {
@@ -472,6 +473,7 @@
     protected override void OnInitialized()
     {
         _groupedTracks = new Dictionary<string, List<SpotifyTrack>>();
+        _destinationPlaylistName = SelectedFilter.SuggestedPlaylistName;
 
         if (!SpotifyAuthSessionManager.IsAuthenticated())
         {
@@ -606,6 +608,24 @@
     private int GetMatchingTracksCount() => _tracks.Count(SelectedFilter.Matches);
 
     private List<SpotifyTrack> GetMatchingTracks() => _tracks.Where(SelectedFilter.Matches).ToList();
+
+    private void OnFilterChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int index) && index >= 0 && index < _availableFilters.Count)
+        {
+            _selectedFilterIndex = index;
+            _destinationPlaylistName = SelectedFilter.SuggestedPlaylistName;
+            _copyStatusMessage = string.Empty;
+        }
+    }
+
+    private void UpdateSuggestedPlaylistName()
+    {
+        if (string.IsNullOrEmpty(_destinationPlaylistName))
+        {
+            _destinationPlaylistName = SelectedFilter.SuggestedPlaylistName;
+        }
+    }
 
     private async Task CopyTracksToPlaylistAsync()
     {
