@@ -1,286 +1,67 @@
-# Spotify Playlist Manager - Cursor Agent Rules
+# Spotify Playlist Manager
 
-## Project Overview
-
-This is a **Spotify Playlist Sorter** application that allows users to view and sort their Spotify playlist tracks by genre. It's built with ASP.NET Core Blazor Server and integrates with the Spotify Web API.
+Blazor Server app (.NET 9.0) for viewing and sorting Spotify playlist tracks by genre.
 
 ## Tech Stack
 
-- **Framework**: .NET 9.0
-- **UI Framework**: Blazor Server with Interactive Server render mode
-- **Styling**: Tailwind CSS
-- **Authentication**:
-  - Google OAuth (ASP.NET Core Authentication)
-  - Spotify OAuth2 (custom implementation)
-- **HTTP Client**: System.Net.Http.HttpClient
-- **Session**: ASP.NET Core Distributed Memory Cache + Session
+- Blazor Server (Interactive Server render mode)
+- Tailwind CSS (dark theme)
+- Google OAuth + Spotify OAuth2 (custom)
+- Session-based token storage
 
-## Architecture
-
-This project follows the **Vertical Slice Architecture** pattern, organizing code by feature rather than technical layers.
-
-### Principles
-
-- **Feature-based organization**: Each feature contains all its related code (pages, services, models)
-- **Infrastructure separation**: Cross-cutting infrastructure concerns live in `Infrastructure/`
-- **Minimal coupling**: Features should be independent; shared code goes in `Features/Shared/`
-- **No business logic in Infrastructure**: Infrastructure contains only external integrations, configuration, and DI extensions
-
-### What Goes Where
-
-| Location | Contains |
-|----------|----------|
-| `Features/{FeatureName}/` | Page components, feature-specific services, models, validators |
-| `Features/Shared/` | Shared UI components (Header, Sidebar, buttons, etc.) |
-| `App/` | App shell (MainLayout, App.razor, Routes.razor, Error.razor) |
-| `Infrastructure/` | External API clients, auth providers, DI extensions, configuration |
-
-## Project Structure (Target)
+## Architecture: Vertical Slice
 
 ```
 src/UI/
-├── App/                     # App shell (layout, routing, error handling)
-│   ├── App.razor
-│   ├── Routes.razor
-│   ├── MainLayout.razor
-│   ├── Error.razor
-│   └── _Imports.razor
+├── App/                    # Shell: MainLayout, App, Routes, Error
 ├── Features/
-│   ├── Shared/              # Shared UI components (Header, Sidebar, etc.)
-│   │   ├── Header.razor
-│   │   └── Sidebar.razor
-│   ├── Playlists/           # Playlists list feature
-│   │   ├── PlaylistsPage.razor
-│   │   ├── PlaylistService.cs
-│   │   └── PlaylistModels.cs
-│   └── PlaylistDetails/     # Playlist details feature
-│       ├── PlaylistDetailsPage.razor
-│       └── ...
-├── Infrastructure/          # External concerns only
-│   ├── Auth/                # Authentication configuration
-│   │   └── AuthExtensions.cs
-│   └── Spotify/             # Spotify API integration
-│       ├── SpotifyAuthService.cs
-│       ├── SpotifyAuthSessionManager.cs
-│       ├── SpotifyExtensions.cs
-│       └── SpotifyHttpClient.cs
-├── wwwroot/
-│   └── app.css              # Tailwind CSS entry point
-├── Program.cs               # Application entry point and DI configuration
-└── appsettings.json         # Configuration
+│   ├── Shared/             # Shared components (Header, Sidebar)
+│   └── {Feature}/          # Page.razor, Service.cs, Models.cs
+├── Infrastructure/         # Technical concerns (Auth/, Spotify/, DB, caching)
+└── wwwroot/app.css
 ```
 
-### Feature Slice Structure
+**Principles**: Feature-based organization, Infrastructure for technical concerns only (no business logic), shared UI in `Features/Shared/`.
 
-Each feature folder should contain:
+## Code Style
 
-```
-Features/{FeatureName}/
-├── {FeatureName}Page.razor      # Main page component
-├── {FeatureName}Service.cs      # Feature-specific service (if needed)
-├── {FeatureName}Models.cs       # Feature-specific DTOs/models
-├── Components/                  # Feature-specific child components (optional)
-│   └── {ComponentName}.razor
-└── {FeatureName}Validator.cs    # Validation logic (if needed)
-```
+- File-scoped namespaces, primary constructors, `sealed` classes
+- `record` types for DTOs with `init` setters
+- Collection expressions `[]`, target-typed `new()`
+- Explicit types (`string x = ...` not `var`)
+- Underscore prefix for private fields (`_httpClient`)
+- Named parameters for clarity
+- `System.Text.Json` with `[JsonPropertyName]`
+- Extension methods for DI registration (e.g., `AddSpotifyServices()`)
 
-## Code Conventions
+## Blazor
 
-### C# Style
+- `@rendermode InteractiveServer` for interactive pages
+- `@inject` at top, `@code {}` for logic
+- Auth state handling in `OnInitializedAsync()`
 
-- Use **file-scoped namespaces** (`namespace UI.Infrastructure.Spotify;`)
-- Use **primary constructors** where appropriate
-- Prefer `sealed` classes for non-inheritable types
-- Prefer **records** for data transfer objects (DTOs) and immutable data types
-- Use **collection expressions** (`[]` instead of `new List<T>()`)
-- Use **target-typed new** (`new()` when type is obvious)
-- Use **init-only properties** for immutable data
-- Use **explicit types** for local variables (`string name = ...` not `var name = ...`)
-- Use named parameters for clarity (e.g., `requestUri: "me/playlists"`)
-- Prefix private fields with underscore (`_httpClient`, `_logger`)
+## Tailwind Theme
 
-### Immutability Patterns
+- Background: `bg-[#0f1729]` (main), `bg-[#232a3b]` (cards)
+- Text: `text-white`, `text-gray-200`, `text-gray-400`
+- Accent: `text-green-500`, `border-green-500`
+- Grid: `grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6`
 
-- Prefer **immutable data structures** over mutable ones
-- Use `record` types for value semantics and immutability
-- Use `init` setters instead of `set` for properties that should be set only during initialization
-- Consider `ImmutableList<T>`, `ImmutableDictionary<K,V>` for collections in records
-- Favor pure functions that don't mutate state
+## Spotify API
 
-### JSON Serialization
+- Base: `https://api.spotify.com/v1/`
+- Endpoints: `/me/playlists`, `/playlists/{id}`, `/playlists/{id}/tracks`, `/artists/{id}`
+- Auto token refresh via `ExecuteWithTokenRefreshAsync<T>()`
+- Auth endpoints: `/spotify-auth` (initiate), `/callback` (OAuth)
 
-- Use `System.Text.Json` with `[JsonPropertyName]` attributes for Spotify API models
-- Prefer `record` types for API response models
-- Models use `init` setters for immutability
+## Git Commits
 
-### Extension Methods
+Follow [Conventional Commits](https://www.conventionalcommits.org/): `feat`, `fix`, `build`, `chore`, `docs`, `refactor`, `perf`, `test`. Max 72 chars, imperative mood.
 
-- Group related service registrations in extension methods (e.g., `AddSpotifyServices()`)
-- Group related middleware in extension methods (e.g., `UseSpotifyEndpoints()`)
-- Include XML documentation for public extension methods
-- Return the builder/app for method chaining
-
-### Blazor Components
-
-- Use `@rendermode InteractiveServer` for interactive pages
-- Inject services at the top of the file with `@inject`
-- Use `@code {}` blocks for component logic
-- Prefix private component fields with underscore
-- Handle authentication state in `OnInitializedAsync()`
-
-### Error Handling
-
-- Use structured logging with `ILogger<T>`
-- Log errors with context (playlist ID, artist ID, etc.)
-- Handle token expiration with automatic refresh in `ExecuteWithTokenRefreshAsync()`
-
-## Git Commit Conventions
-
-This project follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) specification.
-
-### Commit Message Format
-
-```
-<type>[optional scope]: <description>
-
-[optional body]
-
-[optional footer(s)]
-```
-
-### Commit Message Rules
-
-- **Subject line must not exceed 72 characters**
-- Use imperative mood ("add feature" not "added feature")
-- Do not end the subject line with a period
-- Separate subject from body with a blank line
-- Wrap body text at 72 characters
-
-### Commit Types
-
-| Type       | Description                                              |
-|------------|----------------------------------------------------------|
-| `feat`     | A new feature (correlates with MINOR in SemVer)          |
-| `fix`      | A bug fix (correlates with PATCH in SemVer)              |
-| `build`    | Changes to build system or dependencies                  |
-| `chore`    | Maintenance tasks, no production code change             |
-| `ci`       | Changes to CI configuration files and scripts            |
-| `docs`     | Documentation only changes                               |
-| `style`    | Code style changes (formatting, whitespace, etc.)        |
-| `refactor` | Code change that neither fixes a bug nor adds a feature  |
-| `perf`     | Performance improvements                                 |
-| `test`     | Adding or correcting tests                               |
-
-### Examples
-
-```bash
-# Feature
-feat: add playlist search functionality
-
-# Bug fix
-fix: resolve token refresh race condition
-
-# Build/dependency change
-build: upgrade target framework from .NET 8 to .NET 9
-
-# Documentation
-docs: update README with setup instructions
-
-# Breaking change (use ! after type)
-feat!: change authentication flow to use PKCE
-```
-
-## Styling Guidelines
-
-### Tailwind CSS
-
-- Use Tailwind utility classes directly in Razor components
-- Dark theme with custom colors:
-  - Background: `bg-[#0f1729]` (main), `bg-[#232a3b]` (cards)
-  - Text: `text-white`, `text-gray-200`, `text-gray-400`, `text-gray-500`
-  - Accent: `border-green-500`, `text-green-500` (Spotify green)
-- Use responsive prefixes: `sm:`, `lg:`, etc.
-- Use hover states: `hover:shadow-xl`, `hover:bg-red-700`
-- Use transitions: `transition-all duration-300`
-
-### Layout Patterns
-
-- Flexbox for layout (`flex`, `flex-col`, `items-center`, `justify-center`)
-- Grid for card layouts (`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6`)
-- Max width containers (`max-w-7xl mx-auto`)
-- Consistent padding (`p-4`, `p-6`, `p-8`)
-
-## API Integration
-
-### Spotify API
-
-- Base URL: `https://api.spotify.com/v1/`
-- Authentication: Bearer token in Authorization header
-- Endpoints used:
-  - `GET /me/playlists` - User's playlists
-  - `GET /playlists/{id}` - Playlist details
-  - `GET /playlists/{id}/tracks` - Playlist tracks with pagination
-  - `GET /artists/{id}` - Artist details (for genre info)
-
-### Token Management
-
-- Access tokens stored in session
-- Automatic token refresh on 401 Unauthorized responses
-- OAuth callback handled at `/callback` endpoint
-- Auth initiation at `/spotify-auth` endpoint
-
-## Development Notes
-
-### Running the Application
+## Run
 
 ```bash
 dotnet run --project src/UI/UI.csproj --launch-profile http
 ```
 
-The app runs on `http://127.0.0.1:5155` (not localhost, due to Spotify redirect URI requirements).
-
-### Configuration
-
-Required settings in `appsettings.json`:
-- `Spotify:ClientId` - Spotify app client ID
-- `Spotify:ClientSecret` - Spotify app client secret
-- `Spotify:RedirectUri` - OAuth callback URL
-- `Authentication:Google:ClientId` - Google OAuth client ID
-- `Authentication:Google:ClientSecret` - Google OAuth client secret
-
-### Key Patterns
-
-1. **Service Registration**: Use extension methods in `Infrastructure/` for clean DI setup
-2. **Token Refresh**: `ExecuteWithTokenRefreshAsync<T>()` wraps API calls with automatic retry
-3. **Session Storage**: `SpotifyAuthSessionManager` abstracts session-based token storage
-4. **Genre Sorting**: Tracks are grouped by artist's primary genre
-
-## When Modifying This Codebase
-
-### Adding New Features
-
-1. Create a new folder under `Features/{FeatureName}/`
-2. Add the page component: `{FeatureName}Page.razor`
-3. Add feature-specific models: `{FeatureName}Models.cs`
-4. Add feature-specific service if needed: `{FeatureName}Service.cs`
-5. Keep all feature code within its slice
-
-### Shared Components
-
-1. Add reusable UI components to `Features/Shared/`
-2. Only promote to Shared when used by 2+ features
-
-### Infrastructure Changes
-
-1. Add external API integrations to `Infrastructure/`
-2. Create DI extension methods for service registration
-3. No business logic in Infrastructure - only configuration and external concerns
-
-### General Guidelines
-
-1. Follow existing code style and patterns
-2. Use Tailwind CSS for all styling
-3. Maintain the dark theme aesthetic
-4. Include XML documentation for public APIs
-5. Prefer vertical slices over horizontal layers
-
+App runs on `http://127.0.0.1:5155`.
