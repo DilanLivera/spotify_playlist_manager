@@ -1,4 +1,5 @@
 @page "/playlist/{PlaylistId}"
+@using UI.Features.PlaylistDetails
 @using UI.Infrastructure.Spotify
 @inject SpotifyService SpotifyService
 @inject SpotifyAuthSessionManager SpotifyAuthSessionManager
@@ -183,6 +184,76 @@
                     </div>
                 }
             </p>
+        </div>
+
+        @* Copy to Playlist Section *@
+        <div class="mb-8 bg-[#232a3b] rounded-lg p-6 shadow-lg">
+            <h3 class="text-xl font-semibold text-white mb-4">Copy Tracks to Playlist</h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+                @* Filter Selection *@
+                <div>
+                    <label class="block text-gray-400 text-sm mb-2">Filter</label>
+                    <select @bind="_selectedFilterIndex"
+                            class="w-full bg-[#1A1E2A] text-white border border-gray-600 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                        @for (int i = 0; i < _availableFilters.Count; i++)
+                        {
+                            <option value="@i">@_availableFilters[i].Name</option>
+                        }
+                    </select>
+                </div>
+
+                @* Destination Playlist Name *@
+                <div>
+                    <label class="block text-gray-400 text-sm mb-2">Destination Playlist</label>
+                    <input type="text"
+                           @bind="_destinationPlaylistName"
+                           placeholder="Enter playlist name"
+                           class="w-full bg-[#1A1E2A] text-white border border-gray-600 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 focus:border-transparent placeholder-gray-500"/>
+                </div>
+
+                @* Matching Tracks Count *@
+                <div>
+                    <label class="block text-gray-400 text-sm mb-2">Matching Tracks</label>
+                    <div class="bg-[#1A1E2A] text-white border border-gray-600 rounded-lg px-4 py-2.5">
+                        <span class="text-green-400 font-semibold">@GetMatchingTracksCount()</span>
+                        <span class="text-gray-400"> of @_tracks.Count</span>
+                    </div>
+                </div>
+
+                @* Copy Button *@
+                <div>
+                    <button type="button"
+                            @onclick="CopyTracksToPlaylistAsync"
+                            disabled="@(_isCopying || GetMatchingTracksCount() == 0 || string.IsNullOrWhiteSpace(_destinationPlaylistName))"
+                            class="w-full text-white bg-gradient-to-r from-green-600 to-emerald-500 hover:bg-gradient-to-l focus:ring-2 focus:ring-green-400 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center justify-center shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                        @if (_isCopying)
+                        {
+                            <div class="animate-spin rounded-full h-4 w-4 mr-2 border-t-2 border-b-2 border-white"></div>
+                            <span>Copying...</span>
+                        }
+                        else
+                        {
+                            <svg class="w-4 h-4 mr-2"
+                                 fill="currentColor"
+                                 viewBox="0 0 20 20"
+                                 xmlns="http://www.w3.org/2000/svg">
+                                <path d="M8 2a1 1 0 000 2h2a1 1 0 100-2H8z"/>
+                                <path d="M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z"/>
+                            </svg>
+                            <span>Copy to Playlist</span>
+                        }
+                    </button>
+                </div>
+            </div>
+
+            @* Status Message *@
+            @if (!string.IsNullOrEmpty(_copyStatusMessage))
+            {
+                <div class="mt-4 p-3 rounded-lg @(_copyStatusIsError ? "bg-red-900/50 text-red-300" : "bg-green-900/50 text-green-300")">
+                    @_copyStatusMessage
+                </div>
+            }
         </div>
 
         <div class="space-y-6">
@@ -380,6 +451,24 @@
     private readonly HashSet<string> _collapsedSections = [];
     private SpotifyPlaylist? _playlist;
 
+    // Filter and copy-to-playlist state
+    private readonly List<ITrackFilter> _availableFilters =
+    [
+        new YearRangeFilter(minYear: 2000),
+        new YearRangeFilter(minYear: 1990, maxYear: 1999),
+        new YearRangeFilter(minYear: 1980, maxYear: 1989),
+        new YearRangeFilter(minYear: 1970, maxYear: 1979),
+        new YearRangeFilter(minYear: 1960, maxYear: 1969),
+        new YearRangeFilter(minYear: 1900, maxYear: 1959)
+    ];
+    private int _selectedFilterIndex = 0;
+    private string _destinationPlaylistName = string.Empty;
+    private bool _isCopying = false;
+    private string _copyStatusMessage = string.Empty;
+    private bool _copyStatusIsError = false;
+
+    private ITrackFilter SelectedFilter => _availableFilters[_selectedFilterIndex];
+
     protected override void OnInitialized()
     {
         _groupedTracks = new Dictionary<string, List<SpotifyTrack>>();
@@ -513,5 +602,57 @@
     }
 
     private bool IsSectionCollapsed(string key) => _collapsedSections.Contains(key);
+
+    private int GetMatchingTracksCount() => _tracks.Count(SelectedFilter.Matches);
+
+    private List<SpotifyTrack> GetMatchingTracks() => _tracks.Where(SelectedFilter.Matches).ToList();
+
+    private async Task CopyTracksToPlaylistAsync()
+    {
+        if (_isCopying || string.IsNullOrWhiteSpace(_destinationPlaylistName))
+        {
+            return;
+        }
+
+        List<SpotifyTrack> matchingTracks = GetMatchingTracks();
+
+        if (matchingTracks.Count == 0)
+        {
+            _copyStatusMessage = "No tracks match the selected filter.";
+            _copyStatusIsError = true;
+            return;
+        }
+
+        try
+        {
+            _isCopying = true;
+            _copyStatusMessage = string.Empty;
+            StateHasChanged();
+
+            // Get or create the destination playlist
+            SpotifyPlaylist destinationPlaylist = await SpotifyService.GetOrCreatePlaylistAsync(
+                name: _destinationPlaylistName.Trim(),
+                description: $"Tracks filtered by: {SelectedFilter.Name}");
+
+            // Convert track IDs to Spotify URIs
+            IEnumerable<string> trackUris = matchingTracks.Select(t => $"spotify:track:{t.Id}");
+
+            // Add tracks to playlist
+            await SpotifyService.AddTracksToPlaylistAsync(destinationPlaylist.Id, trackUris);
+
+            _copyStatusMessage = $"Successfully copied {matchingTracks.Count} tracks to '{destinationPlaylist.Name}'.";
+            _copyStatusIsError = false;
+        }
+        catch (Exception ex)
+        {
+            _copyStatusMessage = $"Error copying tracks: {ex.Message}";
+            _copyStatusIsError = true;
+        }
+        finally
+        {
+            _isCopying = false;
+            StateHasChanged();
+        }
+    }
 }
 
