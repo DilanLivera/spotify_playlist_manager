@@ -191,43 +191,27 @@
             <h3 class="text-xl font-semibold text-white mb-4">Copy Tracks to Playlist</h3>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
-                @* Filter Selection *@
-                <div class="col-span-full md:col-span-1">
-                    <label class="block text-gray-400 text-sm mb-2" for="filter-select">Filter</label>
-                    <select id="filter-select"
-                            value="@_selectedFilterIndex"
-                            @onchange="OnFilterChanged"
-                            class="w-full bg-[#1A1E2A] text-white border border-gray-600 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 focus:border-transparent">
-                        @for (int i = 0; i < _availableFilters.Count; i++)
-                        {
-                            <option value="@i">@_availableFilters[i].Name</option>
-                        }
-                        <option value="@YearRangeFilterIndex">Custom Year Range</option>
-                    </select>
+                @* Year Range Inputs *@
+                <div>
+                    <label class="block text-gray-400 text-sm mb-2" for="start-year-input">Start Year</label>
+                    <input type="number"
+                           id="start-year-input"
+                           @bind-value="_startYear"
+                           @bind-value:event="oninput"
+                           @onchange="OnYearRangeChanged"
+                           placeholder="e.g., 2000"
+                           class="w-full bg-[#1A1E2A] text-white border border-gray-600 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 focus:border-transparent placeholder-gray-500"/>
                 </div>
-                @if (_selectedFilterIndex == YearRangeFilterIndex)
-                {
-                    <div class="col-span-full md:col-span-1">
-                        <label class="block text-gray-400 text-sm mb-2" for="start-year-input">Start Year (e.g., 2000)</label>
-                        <input type="number"
-                               id="start-year-input"
-                               @bind-value="_startYear"
-                               @bind-value:event="oninput"
-                               @onchange="OnCustomYearRangeChanged"
-                               placeholder=""
-                               class="w-full bg-[#1A1E2A] text-white border border-gray-600 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 focus:border-transparent placeholder-gray-500"/>
-                    </div>
-                    <div class="col-span-full md:col-span-1">
-                        <label class="block text-gray-400 text-sm mb-2" for="end-year-input">End Year (Optional, e.g., 2010)</label>
-                        <input type="number"
-                               id="end-year-input"
-                               @bind-value="_endYear"
-                               @bind-value:event="oninput"
-                               @onchange="OnCustomYearRangeChanged"
-                               placeholder="Current Year"
-                               class="w-full bg-[#1A1E2A] text-white border border-gray-600 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 focus:border-transparent placeholder-gray-500"/>
-                    </div>
-                }
+                <div>
+                    <label class="block text-gray-400 text-sm mb-2" for="end-year-input">End Year (Optional)</label>
+                    <input type="number"
+                           id="end-year-input"
+                           @bind-value="_endYear"
+                           @bind-value:event="oninput"
+                           @onchange="OnYearRangeChanged"
+                           placeholder="Current Year"
+                           class="w-full bg-[#1A1E2A] text-white border border-gray-600 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 focus:border-transparent placeholder-gray-500"/>
+                </div>
 
                 @* Destination Playlist Name *@
                 <div>
@@ -480,25 +464,19 @@
     // Custom Year Range Filter
     private int? _startYear = 2000;
     private int? _endYear = null; // Represents 'up to current year' if null
-    private const int YearRangeFilterIndex = 0; // Index for the 'Custom Year Range' option
 
     // Filter and copy-to-playlist state
-    private readonly List<ITrackFilter> _availableFilters = [];
-    private int _selectedFilterIndex = YearRangeFilterIndex;
     private string _destinationPlaylistName = string.Empty;
     private bool _isCopying = false;
     private string _copyStatusMessage = string.Empty;
     private bool _copyStatusIsError = false;
 
-    private ITrackFilter SelectedFilter => _selectedFilterIndex == YearRangeFilterIndex
-        ? new YearRangeFilter(minYear: _startYear ?? 1900, maxYear: _endYear ?? DateTime.Now.Year)
-        : _availableFilters[_selectedFilterIndex];
+    private ITrackFilter SelectedFilter => new YearRangeFilter(minYear: _startYear ?? 1900, maxYear: _endYear ?? DateTime.Now.Year);
 
     protected override void OnInitialized()
     {
         _groupedTracks = new Dictionary<string, List<SpotifyTrack>>();
         _destinationPlaylistName = SelectedFilter.SuggestedPlaylistName;
-        OnCustomYearRangeChanged(); // Initialize with default custom year range
 
         if (!SpotifyAuthSessionManager.IsAuthenticated())
         {
@@ -506,13 +484,13 @@
         }
     }
 
-    private void OnCustomYearRangeChanged()
+    private void OnYearRangeChanged()
     {
         // This method is called when start or end year inputs change.
         // The SelectedFilter computed property will automatically create a new YearRangeFilter.
-        // We just need to ensure the UI updates to reflect the new filter.
-        StateHasChanged();
+        _destinationPlaylistName = SelectedFilter.SuggestedPlaylistName;
         _copyStatusMessage = string.Empty;
+        StateHasChanged();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -642,17 +620,6 @@
     private int GetMatchingTracksCount() => _tracks.Count(SelectedFilter.Matches);
 
     private List<SpotifyTrack> GetMatchingTracks() => _tracks.Where(SelectedFilter.Matches).ToList();
-
-    private void OnFilterChanged(ChangeEventArgs e)
-    {
-        if (int.TryParse(e.Value?.ToString(), out int index))
-        {
-            _selectedFilterIndex = index;
-            _destinationPlaylistName = SelectedFilter.SuggestedPlaylistName;
-            _copyStatusMessage = string.Empty;
-            StateHasChanged();
-        }
-    }
 
     private async Task CopyTracksToPlaylistAsync()
     {
