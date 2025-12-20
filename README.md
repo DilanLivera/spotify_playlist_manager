@@ -56,6 +56,21 @@ Sort Spotify playlist songs by genre.
 5. Grant the requested permissions to your application
 6. Start managing and sorting your playlists by genre
 
+## Development Setup
+
+### Git Hooks
+
+This project uses git hooks to enforce [Conventional Commits](https://www.conventionalcommits.org/) format. To enable the hooks, run:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+The commit-msg hook validates:
+- Conventional commit format (`type: description`)
+- Subject line maximum 72 characters
+- No trailing period on subject line
+
 ## Troubleshooting
 
 - If you encounter authentication errors, verify that your redirect URI in the Spotify Dashboard exactly matches the one in your appsettings.json file
