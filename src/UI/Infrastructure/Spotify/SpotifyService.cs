@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Net.Http.Headers;
+using UI.Features.Shared.Domain;
 using UI.Infrastructure.Observability;
 
 namespace UI.Infrastructure.Spotify;
@@ -26,7 +27,7 @@ public sealed class SpotifyService
         UpdateAuthorizationHeader();
     }
 
-    public async Task<List<SpotifyPlaylist>> GetUserPlaylistsAsync()
+    public async Task<List<Playlist>> GetUserPlaylistsAsync()
     {
         using Activity? activity = ObservabilityExtensions.StartActivity("GetUserPlaylists");
 
@@ -34,14 +35,14 @@ public sealed class SpotifyService
 
         try
         {
-            Func<Task<List<SpotifyPlaylist>>> apiCall = async () =>
+            Func<Task<List<Playlist>>> apiCall = async () =>
             {
                 UserPlaylistsResponse playlistsResponse = await _httpClient.GetFromJsonAsync<UserPlaylistsResponse>(requestUri: "me/playlists") ?? throw new InvalidOperationException("Response can not be null");
 
-                return playlistsResponse.Items;
+                return playlistsResponse.Items.MapToDomain().ToList();
             };
 
-            List<SpotifyPlaylist> playlists = await ExecuteWithTokenRefreshAsync(apiCall);
+            List<Playlist> playlists = await ExecuteWithTokenRefreshAsync(apiCall);
 
             _logger.LogInformation("Successfully fetched {PlaylistCount} playlists", playlists.Count);
             activity?.SetTag("playlist.count", playlists.Count);
@@ -57,9 +58,9 @@ public sealed class SpotifyService
         }
     }
 
-    public async Task<IReadOnlyList<SpotifyTrack>> GetPlaylistTracksAsync(string playlistId) => await GetPlaylistTracksAsync(playlistId, offset: 0, limit: 100);
+    public async Task<IReadOnlyList<Track>> GetPlaylistTracksAsync(string playlistId) => await GetPlaylistTracksAsync(playlistId, offset: 0, limit: 100);
 
-    public async Task<IReadOnlyList<SpotifyTrack>> GetPlaylistTracksAsync(string playlistId, int offset, int limit)
+    public async Task<IReadOnlyList<Track>> GetPlaylistTracksAsync(string playlistId, int offset, int limit)
     {
         using Activity? activity = ObservabilityExtensions.StartActivity("GetPlaylistTracks");
         activity?.SetTag("playlist.id", playlistId);
@@ -71,17 +72,17 @@ public sealed class SpotifyService
 
         try
         {
-            Func<Task<SpotifyTrack[]>> apiCall = async () =>
+            Func<Task<Track[]>> apiCall = async () =>
             {
                 string requestUri = $"playlists/{playlistId}/tracks?offset={offset}&limit={limit}";
 
                 PlaylistTrackResponse trackResponse = await _httpClient.GetFromJsonAsync<PlaylistTrackResponse>(requestUri) ?? throw new InvalidOperationException("Response can not be null");
 
-                SpotifyTrack[] tracks = trackResponse.Items
+                SpotifyTrack[] dtoTracks = trackResponse.Items
                                                      .Select(i => i.Track)
                                                      .ToArray();
 
-                foreach (SpotifyTrack track in tracks)
+                foreach (SpotifyTrack track in dtoTracks)
                 {
                     if (track.Artists.Count > 0)
                     {
@@ -90,10 +91,10 @@ public sealed class SpotifyService
                     }
                 }
 
-                return tracks;
+                return dtoTracks.MapToDomain().ToArray();
             };
 
-            SpotifyTrack[] tracks = await ExecuteWithTokenRefreshAsync(apiCall);
+            Track[] tracks = await ExecuteWithTokenRefreshAsync(apiCall);
 
             _logger.LogInformation("Fetched {TrackCount} tracks for playlist {PlaylistId}",
                 tracks.Length, playlistId);
@@ -113,7 +114,7 @@ public sealed class SpotifyService
         }
     }
 
-    public async Task<SpotifyPlaylist> GetPlaylistAsync(string playlistId)
+    public async Task<Playlist> GetPlaylistAsync(string playlistId)
     {
         using Activity? activity = ObservabilityExtensions.StartActivity("GetPlaylist");
         activity?.SetTag("playlist.id", playlistId);
@@ -122,17 +123,17 @@ public sealed class SpotifyService
 
         try
         {
-            Func<Task<SpotifyPlaylist>> apiCall = async () =>
+            Func<Task<Playlist>> apiCall = async () =>
             {
                 string requestUri = $"playlists/{playlistId}";
 
-                SpotifyPlaylist playlist = await _httpClient.GetFromJsonAsync<SpotifyPlaylist>(requestUri) ??
+                SpotifyPlaylist playlistDto = await _httpClient.GetFromJsonAsync<SpotifyPlaylist>(requestUri) ??
                                            throw new InvalidOperationException("Response can not be null");
 
-                return playlist;
+                return playlistDto.MapToDomain();
             };
 
-            SpotifyPlaylist playlist = await ExecuteWithTokenRefreshAsync(apiCall);
+            Playlist playlist = await ExecuteWithTokenRefreshAsync(apiCall);
 
             _logger.LogInformation("Fetched playlist {PlaylistName} ({PlaylistId})",
                 playlist.Name, playlistId);
@@ -148,26 +149,6 @@ public sealed class SpotifyService
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
             throw;
         }
-    }
-
-    public async Task<Dictionary<string, List<SpotifyTrack>>> SortTracksByGenreAsync(string playlistId)
-    {
-        using Activity? activity = ObservabilityExtensions.StartActivity("SortTracksByGenre");
-        activity?.SetTag("playlist.id", playlistId);
-
-        _logger.LogDebug("Sorting tracks by genre for playlist {PlaylistId}", playlistId);
-
-        IReadOnlyList<SpotifyTrack> tracks = await GetPlaylistTracksAsync(playlistId);
-
-        Dictionary<string, List<SpotifyTrack>> sortedTracks = tracks
-            .GroupBy(t => string.IsNullOrEmpty(t.Genre) ? "unknown" : t.Genre)
-            .ToDictionary(g => g.Key, g => g.ToList());
-
-        _logger.LogInformation("Sorted {TrackCount} tracks into {GenreCount} genres for playlist {PlaylistId}",
-            tracks.Count, sortedTracks.Count, playlistId);
-        activity?.SetTag("genre.count", sortedTracks.Count);
-
-        return sortedTracks;
     }
 
     public async Task<SpotifyUser> GetCurrentUserAsync()
@@ -202,7 +183,7 @@ public sealed class SpotifyService
         }
     }
 
-    public async Task<SpotifyPlaylist> CreatePlaylistAsync(string name, string? description = null)
+    public async Task<Playlist> CreatePlaylistAsync(string name, string? description = null)
     {
         using Activity? activity = ObservabilityExtensions.StartActivity("CreatePlaylist");
         activity?.SetTag("playlist.name", name);
@@ -211,7 +192,7 @@ public sealed class SpotifyService
 
         try
         {
-            Func<Task<SpotifyPlaylist>> apiCall = async () =>
+            Func<Task<Playlist>> apiCall = async () =>
             {
                 SpotifyUser user = await GetCurrentUserAsync();
                 string requestUri = $"users/{user.Id}/playlists";
@@ -226,13 +207,13 @@ public sealed class SpotifyService
                 HttpResponseMessage response = await _httpClient.PostAsJsonAsync(requestUri, request);
                 response.EnsureSuccessStatusCode();
 
-                SpotifyPlaylist playlist = await response.Content.ReadFromJsonAsync<SpotifyPlaylist>()
+                SpotifyPlaylist playlistDto = await response.Content.ReadFromJsonAsync<SpotifyPlaylist>()
                     ?? throw new InvalidOperationException("Response can not be null");
 
-                return playlist;
+                return playlistDto.MapToDomain();
             };
 
-            SpotifyPlaylist playlist = await ExecuteWithTokenRefreshAsync(apiCall);
+            Playlist playlist = await ExecuteWithTokenRefreshAsync(apiCall);
 
             _logger.LogInformation("Created playlist {PlaylistName} ({PlaylistId})", playlist.Name, playlist.Id);
             activity?.SetTag("playlist.id", playlist.Id);
@@ -284,15 +265,15 @@ public sealed class SpotifyService
         }
     }
 
-    public async Task<SpotifyPlaylist?> FindPlaylistByNameAsync(string name)
+    public async Task<Playlist?> FindPlaylistByNameAsync(string name)
     {
         using Activity? activity = ObservabilityExtensions.StartActivity("FindPlaylistByName");
         activity?.SetTag("playlist.name", name);
 
         _logger.LogDebug("Searching for playlist by name: {PlaylistName}", name);
 
-        List<SpotifyPlaylist> playlists = await GetUserPlaylistsAsync();
-        SpotifyPlaylist? playlist = playlists.FirstOrDefault(p =>
+        List<Playlist> playlists = await GetUserPlaylistsAsync();
+        Playlist? playlist = playlists.FirstOrDefault(p =>
             p.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 
         if (playlist != null)
@@ -310,14 +291,14 @@ public sealed class SpotifyService
         return playlist;
     }
 
-    public async Task<SpotifyPlaylist> GetOrCreatePlaylistAsync(string name, string? description = null)
+    public async Task<Playlist> GetOrCreatePlaylistAsync(string name, string? description = null)
     {
         using Activity? activity = ObservabilityExtensions.StartActivity("GetOrCreatePlaylist");
         activity?.SetTag("playlist.name", name);
 
         _logger.LogDebug("Getting or creating playlist: {PlaylistName}", name);
 
-        SpotifyPlaylist? existingPlaylist = await FindPlaylistByNameAsync(name);
+        Playlist? existingPlaylist = await FindPlaylistByNameAsync(name);
 
         if (existingPlaylist != null)
         {
@@ -325,7 +306,7 @@ public sealed class SpotifyService
             return existingPlaylist;
         }
 
-        SpotifyPlaylist newPlaylist = await CreatePlaylistAsync(name, description);
+        Playlist newPlaylist = await CreatePlaylistAsync(name, description);
         activity?.SetTag("playlist.created", true);
 
         return newPlaylist;
