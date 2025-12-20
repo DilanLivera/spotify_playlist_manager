@@ -46,6 +46,7 @@ src/UI/
 - Use **file-scoped namespaces** (`namespace UI.Infrastructure.Spotify;`)
 - Use **primary constructors** where appropriate
 - Prefer `sealed` classes for non-inheritable types
+- Prefer **records** for data transfer objects (DTOs) and immutable data types
 - Use **collection expressions** (`[]` instead of `new List<T>()`)
 - Use **target-typed new** (`new()` when type is obvious)
 - Use **init-only properties** for immutable data
@@ -53,9 +54,18 @@ src/UI/
 - Use named parameters for clarity (e.g., `requestUri: "me/playlists"`)
 - Prefix private fields with underscore (`_httpClient`, `_logger`)
 
+### Immutability Patterns
+
+- Prefer **immutable data structures** over mutable ones
+- Use `record` types for value semantics and immutability
+- Use `init` setters instead of `set` for properties that should be set only during initialization
+- Consider `ImmutableList<T>`, `ImmutableDictionary<K,V>` for collections in records
+- Favor pure functions that don't mutate state
+
 ### JSON Serialization
 
 - Use `System.Text.Json` with `[JsonPropertyName]` attributes for Spotify API models
+- Prefer `record` types for API response models
 - Models use `init` setters for immutability
 
 ### Extension Methods
@@ -92,6 +102,14 @@ This project follows [Conventional Commits](https://www.conventionalcommits.org/
 
 [optional footer(s)]
 ```
+
+### Commit Message Rules
+
+- **Subject line must not exceed 72 characters**
+- Use imperative mood ("add feature" not "added feature")
+- Do not end the subject line with a period
+- Separate subject from body with a blank line
+- Wrap body text at 72 characters
 
 ### Commit Types
 
