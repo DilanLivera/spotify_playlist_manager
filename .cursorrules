@@ -11,19 +11,27 @@ Blazor Server app (.NET 9.0) for viewing and sorting Spotify playlist tracks by 
 - Google OAuth + Spotify OAuth2 (custom)
 - Session-based token storage
 
-## Architecture: Vertical Slice
+## Architecture: Vertical Slice + DDD
 
 ```
 src/UI/
 ├── App/                    # Shell: MainLayout, App, Routes, Error
 ├── Features/
-│   ├── Shared/             # Shared components (Header, Sidebar)
-│   └── {Feature}/          # Page.razor, Service.cs, Models.cs
+│   ├── Shared/
+│   │   ├── Domain/         # Domain entities (Track, Playlist)
+│   │   └── Components      # Shared UI components (Header, Sidebar)
+│   └── {Feature}/          # Page.razor, Filters, Application logic
 ├── Infrastructure/         # Technical concerns (Auth/, Spotify/, Observability/)
+│   └── Spotify/            # API client, DTOs, Mapping extensions
 └── wwwroot/app.css
 ```
 
-**Principles**: Feature-based organization, Infrastructure for technical concerns only (no business logic), shared UI in `Features/Shared/`.
+**Principles**: 
+- Feature-based organization with shared Domain entities
+- Domain entities are pure C# POCOs with business logic
+- Infrastructure handles only technical concerns (HTTP, auth, serialization)
+- Map DTOs to Domain entities using `MapToDomain()` extension methods
+- UI and application logic work exclusively with Domain entities
 
 ## Code Style
 
@@ -35,8 +43,19 @@ src/UI/
 - Named parameters for clarity
 - `System.Text.Json` with `[JsonPropertyName]`
 - Extension methods for DI registration (e.g., `AddSpotifyServices()`)
+- Extension methods for mapping: `MapToDomain()` / `MapFromDomain()`
 
-## Blazor
+## Domain-Driven Design
+
+**Domain Layer** (`Features/Shared/Domain/`):
+- Pure C# entities with business logic (no infrastructure concerns)
+- Domain methods encapsulate business rules (e.g., `Track.GetDecade()`)
+- Domain entities are used throughout UI and application logic
+
+**Infrastructure Layer**:
+- Contains DTOs for external APIs (decorated with `[JsonPropertyName]`)
+- Mapping extensions convert DTOs to Domain entities
+- No business logic in infrastructure services
 
 - `@rendermode InteractiveServer` for interactive pages
 - `@inject` at top, `@code {}` for logic

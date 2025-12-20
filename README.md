@@ -84,6 +84,42 @@ The commit-msg hook validates:
 - Compact and detailed views of your organized music
 - Copy tracks to another playlist using configurable filters (e.g., songs from 2000 onwards)
 
+## Architecture
+
+This application follows **Vertical Slice Architecture** with **Domain-Driven Design (DDD)** principles:
+
+### Structure
+
+```
+src/UI/
+├── Features/
+│   ├── Shared/Domain/      # Domain entities (Track, Playlist)
+│   └── {Feature}/          # Feature-specific pages and logic
+├── Infrastructure/         # Technical concerns (Spotify API, Auth, Observability)
+└── App/                    # Application shell
+```
+
+### Domain Layer
+
+Domain entities are pure C# classes located in `Features/Shared/Domain/`:
+- **Track**: Represents a music track with business logic for decade calculation, artist display, etc.
+- **Playlist**: Represents a Spotify playlist aggregate
+
+Domain entities encapsulate business rules and are independent of infrastructure concerns.
+
+### Infrastructure Layer
+
+The Infrastructure layer handles technical details:
+- **Spotify API Client**: HTTP communication with Spotify Web API
+- **DTOs**: Data Transfer Objects for API serialization (decorated with `[JsonPropertyName]`)
+- **Mapping**: Extension methods to convert DTOs to Domain entities (`MapToDomain()`)
+
+### Benefits
+
+- **Testability**: Domain logic can be unit tested without mocking HTTP clients
+- **Maintainability**: Business rules are centralized in Domain entities
+- **Decoupling**: UI and application logic are independent of external API structure
+
 ## Track Filter Architecture
 
 The track filter system uses a Strategy pattern to allow flexible, composable filtering of playlist tracks.
@@ -97,7 +133,7 @@ public interface ITrackFilter
 {
     string Name { get; }
     string SuggestedPlaylistName { get; }
-    bool Matches(SpotifyTrack track);
+    bool Matches(Track track);  // Uses Domain entity
 }
 ```
 
@@ -117,7 +153,7 @@ public sealed class GenreFilter(string genre) : ITrackFilter
 {
     public string Name => $"Genre: {genre}";
     public string SuggestedPlaylistName => $"{genre} Tracks";
-    public bool Matches(SpotifyTrack track) => track.Genre.Equals(genre, StringComparison.OrdinalIgnoreCase);
+    public bool Matches(Track track) => track.Genre.Equals(genre, StringComparison.OrdinalIgnoreCase);
 }
 ```
 
