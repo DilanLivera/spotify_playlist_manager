@@ -135,3 +135,9 @@ public sealed record AddTracksRequest
     [JsonPropertyName("uris")]
     public required IEnumerable<string> Uris { get; init; }
 }
+
+public sealed class ArtistsResponse
+{
+    [JsonPropertyName("artists")]
+    public List<SpotifyArtist> Artists { get; init; } = [];
+}

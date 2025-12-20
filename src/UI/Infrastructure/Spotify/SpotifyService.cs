@@ -58,9 +58,11 @@ public sealed class SpotifyService
         }
     }
 
-    public async Task<IReadOnlyList<Track>> GetPlaylistTracksAsync(string playlistId) => await GetPlaylistTracksAsync(playlistId, offset: 0, limit: 100);
+    public async Task<IReadOnlyList<Track>> GetPlaylistTracksAsync(string playlistId) => await GetPlaylistTracksAsync(playlistId, offset: 0, limit: 100, CancellationToken.None);
 
-    public async Task<IReadOnlyList<Track>> GetPlaylistTracksAsync(string playlistId, int offset, int limit)
+    public async Task<IReadOnlyList<Track>> GetPlaylistTracksAsync(string playlistId, int offset, int limit) => await GetPlaylistTracksAsync(playlistId, offset, limit, CancellationToken.None);
+
+    public async Task<IReadOnlyList<Track>> GetPlaylistTracksAsync(string playlistId, int offset, int limit, CancellationToken cancellationToken)
     {
         using Activity? activity = ObservabilityExtensions.StartActivity("GetPlaylistTracks");
         activity?.SetTag("playlist.id", playlistId);
@@ -76,18 +78,29 @@ public sealed class SpotifyService
             {
                 string requestUri = $"playlists/{playlistId}/tracks?offset={offset}&limit={limit}";
 
-                PlaylistTrackResponse trackResponse = await _httpClient.GetFromJsonAsync<PlaylistTrackResponse>(requestUri) ?? throw new InvalidOperationException("Response can not be null");
+                PlaylistTrackResponse trackResponse = await _httpClient.GetFromJsonAsync<PlaylistTrackResponse>(requestUri, cancellationToken) ?? throw new InvalidOperationException("Response can not be null");
 
                 SpotifyTrack[] dtoTracks = trackResponse.Items
                                                      .Select(i => i.Track)
                                                      .ToArray();
 
+                // Extract unique artist IDs
+                string[] uniqueArtistIds = dtoTracks
+                    .Where(t => t.Artists.Count > 0)
+                    .Select(t => t.Artists[0].Id)
+                    .Distinct()
+                    .ToArray();
+
+                // Bulk fetch genres for all unique artists
+                Dictionary<string, string> artistGenres = await GetArtistsGenresAsync(uniqueArtistIds, cancellationToken);
+
+                // Assign genres to tracks
                 foreach (SpotifyTrack track in dtoTracks)
                 {
                     if (track.Artists.Count > 0)
                     {
                         string artistId = track.Artists[0].Id;
-                        track.Genre = await GetArtistPrimaryGenreAsync(artistId);
+                        track.Genre = artistGenres.GetValueOrDefault(artistId, "unknown");
                     }
                 }
 
@@ -310,6 +323,69 @@ public sealed class SpotifyService
         activity?.SetTag("playlist.created", true);
 
         return newPlaylist;
+    }
+
+    private async Task<Dictionary<string, string>> GetArtistsGenresAsync(string[] artistIds, CancellationToken cancellationToken)
+    {
+        Dictionary<string, string> artistGenres = new();
+
+        if (artistIds.Length == 0)
+        {
+            return artistGenres;
+        }
+
+        _logger.LogDebug("Fetching genres for {ArtistCount} artists in bulk", artistIds.Length);
+
+        try
+        {
+            // Spotify allows up to 50 artist IDs per request
+            const int batchSize = 50;
+            List<string[]> batches = artistIds
+                .Select((id, index) => new { id, index })
+                .GroupBy(x => x.index / batchSize)
+                .Select(g => g.Select(x => x.id).ToArray())
+                .ToList();
+
+            foreach (string[] batch in batches)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                Func<Task<Dictionary<string, string>>> apiCall = async () =>
+                {
+                    string ids = string.Join(",", batch);
+                    string requestUri = $"artists?ids={ids}";
+
+                    ArtistsResponse response = await _httpClient.GetFromJsonAsync<ArtistsResponse>(requestUri, cancellationToken) 
+                        ?? throw new InvalidOperationException("Response can not be null");
+
+                    Dictionary<string, string> batchGenres = new();
+                    foreach (SpotifyArtist artist in response.Artists)
+                    {
+                        if (artist != null)
+                        {
+                            batchGenres[artist.Id] = artist.Genres.FirstOrDefault() ?? "unknown";
+                        }
+                    }
+
+                    return batchGenres;
+                };
+
+                Dictionary<string, string> batchResult = await ExecuteWithTokenRefreshAsync(apiCall);
+                foreach ((string artistId, string genre) in batchResult)
+                {
+                    artistGenres[artistId] = genre;
+                }
+            }
+
+            _logger.LogInformation("Fetched genres for {ArtistCount} artists", artistGenres.Count);
+
+            return artistGenres;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogWarning(ex, "Error getting artist genres in bulk, returning partial results");
+            return artistGenres;
+        }
     }
 
     private async Task<string> GetArtistPrimaryGenreAsync(string artistId)
