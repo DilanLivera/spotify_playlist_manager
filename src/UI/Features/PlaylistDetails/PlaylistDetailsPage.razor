@@ -5,6 +5,7 @@
 @inject SpotifyService SpotifyService
 @inject SpotifyAuthSessionManager SpotifyAuthSessionManager
 @inject NavigationManager NavigationManager
+@implements IDisposable
 @rendermode InteractiveServer
 
 <PageTitle>Playlist Details</PageTitle>
@@ -142,47 +143,16 @@
             <p class="text-gray-400 mt-2">
                 @if (_isLoading)
                 {
-                    <span>Loading tracks...</span>
+                    <div class="flex items-center justify-between flex-wrap gap-2">
+                        <span class="flex items-center">
+                            <div class="animate-spin rounded-full h-4 w-4 mr-2 border-t-2 border-b-2 border-green-500"></div>
+                            Loading tracks... (@_tracks.Count of @(_playlist?.TrackCount ?? 0) loaded, @((_playlist?.TrackCount ?? 0) - _tracks.Count) remaining)
+                        </span>
+                    </div>
                 }
                 else
                 {
-                    <div class="flex items-center justify-between flex-wrap gap-2">
-                        <span>
-                            @if (!_hasMoreTracks)
-                            {
-                                <span>All @_tracks.Count tracks loaded in @_groupedTracks.Count @(_sortingBy == SortingOption.Genre ? "genres" : "decades")</span>
-                            }
-                            else
-                            {
-                                <span>Showing @_tracks.Count tracks in @_groupedTracks.Count @(_sortingBy == SortingOption.Genre ? "genres" : "decades") (more available)</span>
-                            }
-                        </span>
-
-                        @if (_hasMoreTracks)
-                        {
-                            <button @onclick="FetchMoreTracksAsync"
-                                    class="text-white bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 font-medium rounded-full text-sm px-5 py-2 text-center inline-flex items-center shadow-lg transition-all duration-200"
-                                    disabled="@_loadingMore">
-                                @if (_loadingMore)
-                                {
-                                    <div class="animate-spin rounded-full h-4 w-4 mr-2 border-t-2 border-b-2 border-white"></div>
-                                    <span>Loading more...</span>
-                                }
-                                else
-                                {
-                                    <svg class="w-4 h-4 mr-1"
-                                         fill="currentColor"
-                                         viewBox="0 0 20 20"
-                                         xmlns="http://www.w3.org/2000/svg">
-                                        <path fill-rule="evenodd"
-                                              d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z"
-                                              clip-rule="evenodd"/>
-                                    </svg>
-                                    <span>Load More Tracks</span>
-                                }
-                            </button>
-                        }
-                    </div>
+                    <span>All @_tracks.Count tracks loaded in @_groupedTracks.Count @(_sortingBy == SortingOption.Genre ? "genres" : "decades")</span>
                 }
             </p>
         </div>
@@ -461,6 +431,7 @@
     private bool _hasMoreTracks = true;
     private readonly HashSet<string> _collapsedSections = [];
     private Playlist? _playlist;
+    private CancellationTokenSource? _cancellationTokenSource;
 
     // Custom Year Range Filter
     private int? _startYear = 2000;
@@ -478,6 +449,7 @@
     {
         _groupedTracks = new Dictionary<string, List<Track>>();
         _destinationPlaylistName = SelectedFilter.SuggestedPlaylistName;
+        _cancellationTokenSource = new CancellationTokenSource();
 
         if (!SpotifyAuthSessionManager.IsAuthenticated())
         {
@@ -508,13 +480,36 @@
         {
             _playlist = await SpotifyService.GetPlaylistAsync(PlaylistId);
 
-            await FetchMoreTracksAsync();
+            await LoadAllTracksInBackgroundAsync();
         }
-        catch (Exception ex)
+        catch (OperationCanceledException)
+        {
+            // Track loading was cancelled, this is expected when navigating away
+        }
+        catch (Exception)
         {
             _isLoading = false;
             StateHasChanged();
 
+            throw;
+        }
+    }
+
+    private async Task LoadAllTracksInBackgroundAsync()
+    {
+        try
+        {
+            while (_hasMoreTracks && !_cancellationTokenSource!.Token.IsCancellationRequested)
+            {
+                await FetchMoreTracksAsync();
+            }
+
+            _isLoading = false;
+            StateHasChanged();
+        }
+        catch (OperationCanceledException)
+        {
+            _isLoading = false;
             throw;
         }
     }
@@ -528,7 +523,7 @@
             _loadingMore = true;
             StateHasChanged();
 
-            IReadOnlyList<Track> newTracks = await SpotifyService.GetPlaylistTracksAsync(PlaylistId, _offset, BatchSize);
+            IReadOnlyList<Track> newTracks = await SpotifyService.GetPlaylistTracksAsync(PlaylistId, _offset, BatchSize, _cancellationTokenSource!.Token);
 
             if (newTracks.Count > 0)
             {
@@ -652,6 +647,12 @@
             _isCopying = false;
             StateHasChanged();
         }
+    }
+
+    public void Dispose()
+    {
+        _cancellationTokenSource?.Cancel();
+        _cancellationTokenSource?.Dispose();
     }
 }
 
