@@ -15,28 +15,70 @@ This is a **Spotify Playlist Sorter** application that allows users to view and 
 - **HTTP Client**: System.Net.Http.HttpClient
 - **Session**: ASP.NET Core Distributed Memory Cache + Session
 
-## Project Structure
+## Architecture
+
+This project follows the **Vertical Slice Architecture** pattern, organizing code by feature rather than technical layers.
+
+### Principles
+
+- **Feature-based organization**: Each feature contains all its related code (pages, services, models)
+- **Infrastructure separation**: Cross-cutting infrastructure concerns live in `Infrastructure/`
+- **Minimal coupling**: Features should be independent; shared code goes in `Features/Shared/`
+- **No business logic in Infrastructure**: Infrastructure contains only external integrations, configuration, and DI extensions
+
+### What Goes Where
+
+| Location | Contains |
+|----------|----------|
+| `Features/{FeatureName}/` | Page components, feature-specific services, models, validators |
+| `Features/Shared/` | Shared UI components (Header, Sidebar, buttons, etc.) |
+| `Components/Layout/` | App shell only (MainLayout, App.razor, Routes.razor) |
+| `Infrastructure/` | External API clients, auth providers, DI extensions, configuration |
+
+## Project Structure (Target)
 
 ```
 src/UI/
 ├── Components/
-│   ├── Layout/           # Layout components (Header, MainLayout, Sidebar)
-│   ├── Pages/            # Routable page components (.razor)
-│   ├── _Imports.razor    # Global Razor imports
-│   ├── App.razor         # Root application component
-│   └── Routes.razor      # Routing configuration
-├── Infrastructure/
-│   ├── AuthExtensions.cs           # Google auth service extensions
-│   └── Spotify/
-│       ├── SpotifyAuthService.cs        # Spotify OAuth token management
-│       ├── SpotifyAuthSessionManager.cs # Session-based token storage
-│       ├── SpotifyExtensions.cs         # DI and endpoint extensions
-│       └── SpotifyService.cs            # Spotify API client
+│   ├── Layout/              # App shell (MainLayout, App.razor, Routes.razor)
+│   └── _Imports.razor       # Global Razor imports
+├── Features/
+│   ├── Shared/              # Shared UI components (Header, Sidebar, etc.)
+│   │   ├── Header.razor
+│   │   └── Sidebar.razor
+│   ├── Playlists/           # Playlists list feature
+│   │   ├── PlaylistsPage.razor
+│   │   ├── PlaylistService.cs
+│   │   └── PlaylistModels.cs
+│   └── PlaylistDetails/     # Playlist details feature
+│       ├── PlaylistDetailsPage.razor
+│       └── ...
+├── Infrastructure/          # External concerns only
+│   ├── Auth/                # Authentication configuration
+│   │   └── AuthExtensions.cs
+│   └── Spotify/             # Spotify API integration
+│       ├── SpotifyAuthService.cs
+│       ├── SpotifyAuthSessionManager.cs
+│       ├── SpotifyExtensions.cs
+│       └── SpotifyHttpClient.cs
 ├── wwwroot/
-│   └── app.css           # Tailwind CSS entry point
-├── Program.cs            # Application entry point and DI configuration
-├── SpotifyModels.cs      # Spotify API response DTOs
-└── appsettings.json      # Configuration (Spotify & Google credentials)
+│   └── app.css              # Tailwind CSS entry point
+├── Program.cs               # Application entry point and DI configuration
+└── appsettings.json         # Configuration
+```
+
+### Feature Slice Structure
+
+Each feature folder should contain:
+
+```
+Features/{FeatureName}/
+├── {FeatureName}Page.razor      # Main page component
+├── {FeatureName}Service.cs      # Feature-specific service (if needed)
+├── {FeatureName}Models.cs       # Feature-specific DTOs/models
+├── Components/                  # Feature-specific child components (optional)
+│   └── {ComponentName}.razor
+└── {FeatureName}Validator.cs    # Validation logic (if needed)
 ```
 
 ## Code Conventions
@@ -212,12 +254,30 @@ Required settings in `appsettings.json`:
 
 ## When Modifying This Codebase
 
+### Adding New Features
+
+1. Create a new folder under `Features/{FeatureName}/`
+2. Add the page component: `{FeatureName}Page.razor`
+3. Add feature-specific models: `{FeatureName}Models.cs`
+4. Add feature-specific service if needed: `{FeatureName}Service.cs`
+5. Keep all feature code within its slice
+
+### Shared Components
+
+1. Add reusable UI components to `Features/Shared/`
+2. Only promote to Shared when used by 2+ features
+
+### Infrastructure Changes
+
+1. Add external API integrations to `Infrastructure/`
+2. Create DI extension methods for service registration
+3. No business logic in Infrastructure - only configuration and external concerns
+
+### General Guidelines
+
 1. Follow existing code style and patterns
-2. Add new Spotify API models to `SpotifyModels.cs`
-3. Add new pages to `Components/Pages/`
-4. Add new layout components to `Components/Layout/`
-5. Add new infrastructure/services to `Infrastructure/`
-6. Use Tailwind CSS for all styling
-7. Maintain the dark theme aesthetic
-8. Include XML documentation for public APIs
+2. Use Tailwind CSS for all styling
+3. Maintain the dark theme aesthetic
+4. Include XML documentation for public APIs
+5. Prefer vertical slices over horizontal layers
 
