@@ -32,16 +32,19 @@ This project follows the **Vertical Slice Architecture** pattern, organizing cod
 |----------|----------|
 | `Features/{FeatureName}/` | Page components, feature-specific services, models, validators |
 | `Features/Shared/` | Shared UI components (Header, Sidebar, buttons, etc.) |
-| `Components/Layout/` | App shell only (MainLayout, App.razor, Routes.razor) |
+| `App/` | App shell (MainLayout, App.razor, Routes.razor, Error.razor) |
 | `Infrastructure/` | External API clients, auth providers, DI extensions, configuration |
 
 ## Project Structure (Target)
 
 ```
 src/UI/
-├── Components/
-│   ├── Layout/              # App shell (MainLayout, App.razor, Routes.razor)
-│   └── _Imports.razor       # Global Razor imports
+├── App/                     # App shell (layout, routing, error handling)
+│   ├── App.razor
+│   ├── Routes.razor
+│   ├── MainLayout.razor
+│   ├── Error.razor
+│   └── _Imports.razor
 ├── Features/
 │   ├── Shared/              # Shared UI components (Header, Sidebar, etc.)
 │   │   ├── Header.razor

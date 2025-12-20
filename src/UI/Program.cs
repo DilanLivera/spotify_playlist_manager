@@ -1,4 +1,4 @@
-using UI.Components;
+using UI.App;
 using UI.Infrastructure.Auth;
 using UI.Infrastructure.Spotify;
 
