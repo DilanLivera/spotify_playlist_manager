@@ -1,4 +1,6 @@
+using System.Diagnostics;
 using System.Net.Http.Headers;
+using UI.Infrastructure.Observability;
 
 namespace UI.Infrastructure.Spotify;
 
@@ -26,6 +28,10 @@ public sealed class SpotifyService
 
     public async Task<List<SpotifyPlaylist>> GetUserPlaylistsAsync()
     {
+        using Activity? activity = ObservabilityExtensions.StartActivity("GetUserPlaylists");
+
+        _logger.LogDebug("Fetching user playlists from Spotify API");
+
         try
         {
             Func<Task<List<SpotifyPlaylist>>> apiCall = async () =>
@@ -35,11 +41,17 @@ public sealed class SpotifyService
                 return playlistsResponse.Items;
             };
 
-            return await ExecuteWithTokenRefreshAsync(apiCall);
+            List<SpotifyPlaylist> playlists = await ExecuteWithTokenRefreshAsync(apiCall);
+
+            _logger.LogInformation("Successfully fetched {PlaylistCount} playlists", playlists.Count);
+            activity?.SetTag("playlist.count", playlists.Count);
+
+            return playlists;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting user playlists");
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
 
             throw;
         }
@@ -49,6 +61,14 @@ public sealed class SpotifyService
 
     public async Task<IReadOnlyList<SpotifyTrack>> GetPlaylistTracksAsync(string playlistId, int offset, int limit)
     {
+        using Activity? activity = ObservabilityExtensions.StartActivity("GetPlaylistTracks");
+        activity?.SetTag("playlist.id", playlistId);
+        activity?.SetTag("playlist.offset", offset);
+        activity?.SetTag("playlist.limit", limit);
+
+        _logger.LogDebug("Fetching tracks for playlist {PlaylistId} (offset: {Offset}, limit: {Limit})",
+            playlistId, offset, limit);
+
         try
         {
             Func<Task<SpotifyTrack[]>> apiCall = async () =>
@@ -73,7 +93,13 @@ public sealed class SpotifyService
                 return tracks;
             };
 
-            return await ExecuteWithTokenRefreshAsync(apiCall);
+            SpotifyTrack[] tracks = await ExecuteWithTokenRefreshAsync(apiCall);
+
+            _logger.LogInformation("Fetched {TrackCount} tracks for playlist {PlaylistId}",
+                tracks.Length, playlistId);
+            activity?.SetTag("track.count", tracks.Length);
+
+            return tracks;
         }
         catch (Exception ex)
         {
@@ -82,12 +108,18 @@ public sealed class SpotifyService
                              playlistId,
                              offset,
                              limit);
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
             throw;
         }
     }
 
     public async Task<SpotifyPlaylist> GetPlaylistAsync(string playlistId)
     {
+        using Activity? activity = ObservabilityExtensions.StartActivity("GetPlaylist");
+        activity?.SetTag("playlist.id", playlistId);
+
+        _logger.LogDebug("Fetching playlist details for {PlaylistId}", playlistId);
+
         try
         {
             Func<Task<SpotifyPlaylist>> apiCall = async () =>
@@ -100,27 +132,48 @@ public sealed class SpotifyService
                 return playlist;
             };
 
-            return await ExecuteWithTokenRefreshAsync(apiCall);
+            SpotifyPlaylist playlist = await ExecuteWithTokenRefreshAsync(apiCall);
+
+            _logger.LogInformation("Fetched playlist {PlaylistName} ({PlaylistId})",
+                playlist.Name, playlistId);
+            activity?.SetTag("playlist.name", playlist.Name);
+
+            return playlist;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex,
                              "Error getting playlist details for playlist {PlaylistId}",
                              playlistId);
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
             throw;
         }
     }
 
     public async Task<Dictionary<string, List<SpotifyTrack>>> SortTracksByGenreAsync(string playlistId)
     {
+        using Activity? activity = ObservabilityExtensions.StartActivity("SortTracksByGenre");
+        activity?.SetTag("playlist.id", playlistId);
+
+        _logger.LogDebug("Sorting tracks by genre for playlist {PlaylistId}", playlistId);
+
         IReadOnlyList<SpotifyTrack> tracks = await GetPlaylistTracksAsync(playlistId);
 
-        return tracks.GroupBy(t => string.IsNullOrEmpty(t.Genre) ? "unknown" : t.Genre)
-                     .ToDictionary(g => g.Key, g => g.ToList());
+        Dictionary<string, List<SpotifyTrack>> sortedTracks = tracks
+            .GroupBy(t => string.IsNullOrEmpty(t.Genre) ? "unknown" : t.Genre)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        _logger.LogInformation("Sorted {TrackCount} tracks into {GenreCount} genres for playlist {PlaylistId}",
+            tracks.Count, sortedTracks.Count, playlistId);
+        activity?.SetTag("genre.count", sortedTracks.Count);
+
+        return sortedTracks;
     }
 
     private async Task<string> GetArtistPrimaryGenreAsync(string artistId)
     {
+        _logger.LogDebug("Fetching genre for artist {ArtistId}", artistId);
+
         try
         {
             Func<Task<string>> apiCall = async () =>
@@ -134,8 +187,8 @@ public sealed class SpotifyService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex,
-                             "Error getting artist genre for artist {ArtistId}",
+            _logger.LogWarning(ex,
+                             "Error getting artist genre for artist {ArtistId}, defaulting to 'unknown'",
                              artistId);
 
             return "unknown";
@@ -150,16 +203,17 @@ public sealed class SpotifyService
         }
         catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
         {
-            _logger.LogInformation("Access token expired, attempting to refresh");
+            _logger.LogWarning("Access token expired, attempting to refresh");
 
             if (await _spotifyAuthService.RefreshTokenAsync())
             {
                 UpdateAuthorizationHeader();
+                _logger.LogDebug("Token refreshed successfully, retrying API call");
 
                 return await apiCall();
             }
 
-            _logger.LogError("Failed to refresh access token");
+            _logger.LogError("Failed to refresh access token, authentication required");
             throw;
         }
     }

@@ -1,8 +1,12 @@
 using UI.App;
 using UI.Infrastructure.Auth;
+using UI.Infrastructure.Observability;
 using UI.Infrastructure.Spotify;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddObservability(builder.Configuration);
+builder.Logging.AddObservabilityLogging(builder.Configuration);
 
 builder.Services
        .AddRazorComponents()

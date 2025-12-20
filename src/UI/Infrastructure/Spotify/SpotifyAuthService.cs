@@ -1,7 +1,9 @@
+using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.WebUtilities;
+using UI.Infrastructure.Observability;
 
 namespace UI.Infrastructure.Spotify;
 
@@ -26,12 +28,15 @@ public sealed class SpotifyAuthService
 
     public string GetAuthorizationUrl()
     {
+        _logger.LogDebug("Building Spotify authorization URL");
+
         string? clientId = _configuration["Spotify:ClientId"];
         string? redirectUri = _configuration["Spotify:RedirectUri"];
 
         if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(redirectUri))
         {
-            _logger.LogError("Spotify client ID or redirect URI is not configured.");
+            _logger.LogError("Spotify configuration missing: ClientId={HasClientId}, RedirectUri={HasRedirectUri}",
+                !string.IsNullOrEmpty(clientId), !string.IsNullOrEmpty(redirectUri));
             return string.Empty;
         }
 
@@ -45,11 +50,17 @@ public sealed class SpotifyAuthService
                                                       { "scope", "playlist-read-private user-read-recently-played" }
                                                   };
 
+        _logger.LogDebug("Authorization URL built with redirect URI {RedirectUri}", redirectUri);
+
         return QueryHelpers.AddQueryString(uri: "https://accounts.spotify.com/authorize", queryParams);
     }
 
     public async Task<(string AccessToken, string RefreshToken)> ExchangeCodeForTokenAsync(string code)
     {
+        using Activity? activity = ObservabilityExtensions.StartActivity("ExchangeCodeForToken");
+
+        _logger.LogDebug("Exchanging authorization code for tokens");
+
         try
         {
             string? clientId = _configuration["Spotify:ClientId"];
@@ -58,7 +69,9 @@ public sealed class SpotifyAuthService
 
             if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(clientSecret) || string.IsNullOrEmpty(redirectUri))
             {
-                _logger.LogError("Spotify client credentials are not properly configured.");
+                _logger.LogError("Spotify configuration incomplete: ClientId={HasClientId}, ClientSecret={HasClientSecret}, RedirectUri={HasRedirectUri}",
+                    !string.IsNullOrEmpty(clientId), !string.IsNullOrEmpty(clientSecret), !string.IsNullOrEmpty(redirectUri));
+                activity?.SetStatus(ActivityStatusCode.Error, "Missing configuration");
                 return (AccessToken: string.Empty, RefreshToken: string.Empty);
             }
 
@@ -78,17 +91,31 @@ public sealed class SpotifyAuthService
             string accessToken = document.RootElement.GetProperty("access_token").GetString() ?? string.Empty;
             string refreshToken = document.RootElement.GetProperty("refresh_token").GetString() ?? string.Empty;
 
+            _logger.LogInformation("Successfully exchanged authorization code for tokens");
+            activity?.SetTag("auth.success", true);
+
             return (accessToken, refreshToken);
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogError(ex, "HTTP error exchanging code for tokens: {StatusCode}", ex.StatusCode);
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+            return (AccessToken: string.Empty, RefreshToken: string.Empty);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error exchanging code for tokens");
+            _logger.LogError(ex, "Unexpected error exchanging code for tokens");
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
             return (AccessToken: string.Empty, RefreshToken: string.Empty);
         }
     }
 
     public async Task<string> RefreshAccessTokenAsync(string refreshToken)
     {
+        using Activity? activity = ObservabilityExtensions.StartActivity("RefreshAccessToken");
+
+        _logger.LogDebug("Refreshing access token");
+
         try
         {
             string? clientId = _configuration["Spotify:ClientId"];
@@ -96,7 +123,8 @@ public sealed class SpotifyAuthService
 
             if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(clientSecret))
             {
-                _logger.LogError("Spotify client credentials are not properly configured.");
+                _logger.LogError("Spotify client credentials not configured");
+                activity?.SetStatus(ActivityStatusCode.Error, "Missing credentials");
                 return string.Empty;
             }
 
@@ -112,11 +140,21 @@ public sealed class SpotifyAuthService
             string responseBody = await response.Content.ReadAsStringAsync();
             using JsonDocument document = JsonDocument.Parse(responseBody);
 
+            _logger.LogDebug("Access token refreshed successfully");
+            activity?.SetTag("auth.refresh_success", true);
+
             return document.RootElement.GetProperty("access_token").GetString() ?? string.Empty;
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogError(ex, "HTTP error refreshing access token: {StatusCode}", ex.StatusCode);
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+            return string.Empty;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error refreshing access token");
+            _logger.LogError(ex, "Unexpected error refreshing access token");
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
             return string.Empty;
         }
     }
@@ -127,22 +165,27 @@ public sealed class SpotifyAuthService
     /// <returns>True if token refresh was successful, false otherwise.</returns>
     public async Task<bool> RefreshTokenAsync()
     {
+        using Activity? activity = ObservabilityExtensions.StartActivity("RefreshToken");
+
         string refreshToken = _sessionManager.GetRefreshToken();
         if (string.IsNullOrEmpty(refreshToken))
         {
-            _logger.LogWarning("No refresh token available for token refresh");
+            _logger.LogWarning("No refresh token available in session, user needs to re-authenticate");
+            activity?.SetStatus(ActivityStatusCode.Error, "No refresh token");
             return false;
         }
 
         string newAccessToken = await RefreshAccessTokenAsync(refreshToken);
         if (string.IsNullOrEmpty(newAccessToken))
         {
-            _logger.LogError("Failed to refresh access token");
+            _logger.LogError("Token refresh failed, user needs to re-authenticate");
+            activity?.SetStatus(ActivityStatusCode.Error, "Refresh failed");
             return false;
         }
 
         _sessionManager.UpdateAccessToken(newAccessToken);
-        _logger.LogInformation("Successfully refreshed access token");
+        _logger.LogInformation("Session updated with new access token");
+        activity?.SetTag("auth.session_updated", true);
         return true;
     }
 }
