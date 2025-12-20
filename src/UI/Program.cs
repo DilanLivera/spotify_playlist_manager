@@ -1,5 +1,5 @@
 using UI.Components;
-using UI.Infrastructure;
+using UI.Infrastructure.Auth;
 using UI.Infrastructure.Spotify;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);

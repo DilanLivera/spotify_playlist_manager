@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace UI;
+namespace UI.Infrastructure.Spotify;
 
 public sealed class SpotifyPlaylist
 {

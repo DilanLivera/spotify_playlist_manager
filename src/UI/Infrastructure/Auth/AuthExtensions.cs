@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 
-namespace UI.Infrastructure;
+namespace UI.Infrastructure.Auth;
 
 /// <summary>
 /// Extension methods for configuring application services.
@@ -73,3 +73,4 @@ public static class AuthExtensions
         return app;
     }
 }
+

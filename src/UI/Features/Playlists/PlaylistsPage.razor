@@ -1,4 +1,4 @@
-﻿@page "/"
+@page "/"
 @using UI.Infrastructure.Spotify
 @inject SpotifyService SpotifyService
 @inject SpotifyAuthSessionManager SpotifyAuthSessionManager
@@ -94,3 +94,4 @@
 
     private void NavigateToPlaylist(string playlistId) => NavigationManager.NavigateTo(uri: $"/playlist/{playlistId}");
 }
+
