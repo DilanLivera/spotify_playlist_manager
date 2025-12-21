@@ -263,10 +263,6 @@
                                                 <th class="pb-2 font-medium">Album</th>
                                                 <th class="pb-2 font-medium">Release Date</th>
                                                 <th class="pb-2 font-medium">Mood</th>
-                                                <th class="pb-2 font-medium">Tempo</th>
-                                                <th class="pb-2 font-medium">Key</th>
-                                                <th class="pb-2 font-medium">Loudness</th>
-                                                <th class="pb-2 font-medium">V / E / D</th>
                                             }
                                     </tr>
                                     </thead>
@@ -297,18 +293,6 @@
                                                 </td>
                                                 <td class="py-3">
                                                     <div class="h-6 bg-gray-700 rounded-full w-24"></div>
-                                                </td>
-                                                <td class="py-3">
-                                                    <div class="h-4 bg-gray-700 rounded w-16"></div>
-                                                </td>
-                                                <td class="py-3">
-                                                    <div class="h-4 bg-gray-700 rounded w-12"></div>
-                                                </td>
-                                                <td class="py-3">
-                                                    <div class="h-4 bg-gray-700 rounded w-16"></div>
-                                                </td>
-                                                <td class="py-3">
-                                                    <div class="h-4 bg-gray-700 rounded w-32"></div>
                                                 </td>
                                             }
                                         </tr>
@@ -376,10 +360,6 @@
                                                 <th class="pb-2 font-medium">Album</th>
                                                 <th class="pb-2 font-medium">Release Date</th>
                                                 <th class="pb-2 font-medium">Mood</th>
-                                                <th class="pb-2 font-medium">Tempo</th>
-                                                <th class="pb-2 font-medium">Key</th>
-                                                <th class="pb-2 font-medium">Loudness</th>
-                                                <th class="pb-2 font-medium">V / E / D</th>
                                             }
                                         </tr>
                                         </thead>
@@ -423,24 +403,6 @@
                                                         <span class="px-2 py-1 rounded-full text-xs font-semibold @GetMoodClass(track.GetMood())">
                                                             @track.GetMood()
                                                         </span>
-                                                    </td>
-                                                    <td class="py-3 text-gray-400 text-sm" title="@($"Tempo: {track.Tempo:F1} BPM")">
-                                                        @track.Tempo.ToString("F0") BPM
-                                                    </td>
-                                                    <td class="py-3 text-gray-400 text-sm" title="@($"Key: {GetMusicalKey(track.Key)} ({track.Key})")">
-                                                        @GetMusicalKey(track.Key)
-                                                    </td>
-                                                    <td class="py-3 text-gray-400 text-sm" title="@($"Loudness: {track.Loudness:F1} dB")">
-                                                        @track.Loudness.ToString("F1") dB
-                                                    </td>
-                                                    <td class="py-3 text-gray-400 text-sm">
-                                                        <div class="flex gap-2" title="Valence / Energy / Danceability">
-                                                            <span title="Valence">@track.Valence.ToString("F2")</span>
-                                                            <span class="text-gray-600">/</span>
-                                                            <span title="Energy">@track.Energy.ToString("F2")</span>
-                                                            <span class="text-gray-600">/</span>
-                                                            <span title="Danceability">@track.Danceability.ToString("F2")</span>
-                                                        </div>
                                                     </td>
                                                 }
                                             </tr>
