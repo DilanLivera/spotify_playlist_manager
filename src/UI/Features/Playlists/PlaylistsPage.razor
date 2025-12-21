@@ -1,7 +1,7 @@
 @page "/"
 @using UI.Features.Shared.Domain
 @using UI.Infrastructure.Spotify
-@inject SpotifyService SpotifyService
+@inject SpotifyPlaylistService SpotifyPlaylistService
 @inject SpotifyAuthSessionManager SpotifyAuthSessionManager
 @inject NavigationManager NavigationManager
 @rendermode InteractiveServer
@@ -88,7 +88,7 @@
             return;
         }
 
-        _playlists = await SpotifyService.GetUserPlaylistsAsync();
+        _playlists = await SpotifyPlaylistService.GetUserPlaylistsAsync();
 
         _loading = false;
     }

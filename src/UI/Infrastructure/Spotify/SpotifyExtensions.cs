@@ -10,9 +10,39 @@ public static class SpotifyExtensions
     /// </summary>
     /// <param name="services">The service collection.</param>
     /// <returns>The service collection for chaining.</returns>
-    public static IServiceCollection AddSpotifyServices(this IServiceCollection services) => services.AddScoped<SpotifyAuthService>()
-                                                                                                     .AddScoped<SpotifyService>()
-                                                                                                     .AddScoped<SpotifyAuthSessionManager>();
+    public static IServiceCollection AddSpotifyServices(this IServiceCollection services)
+    {
+        // Register auth-related services
+        services.AddScoped<SpotifyAuthService>();
+        services.AddScoped<SpotifyAuthSessionManager>();
+
+        // Register the authentication handler
+        services.AddTransient<SpotifyAuthenticationHandler>();
+
+        // Register SpotifyService with the authentication handler (kept for backward compatibility)
+        services.AddHttpClient<SpotifyService>()
+                .AddHttpMessageHandler<SpotifyAuthenticationHandler>();
+
+        // Register specialized Spotify services with the authentication handler
+        services.AddHttpClient<SpotifyPlaylistService>()
+                .AddHttpMessageHandler<SpotifyAuthenticationHandler>();
+
+        services.AddHttpClient<SpotifyTrackService>()
+                .AddHttpMessageHandler<SpotifyAuthenticationHandler>();
+
+        services.AddHttpClient<SpotifyUserService>()
+                .AddHttpMessageHandler<SpotifyAuthenticationHandler>();
+
+        // Register SpotifyTrackEnricher with the authentication handler
+        services.AddHttpClient<SpotifyTrackEnricher>()
+                .AddHttpMessageHandler<SpotifyAuthenticationHandler>()
+                .ConfigureHttpClient(client =>
+                {
+                    client.BaseAddress = new Uri("https://api.spotify.com/v1/");
+                });
+
+        return services;
+    }
 
     /// <summary>
     /// Configures Spotify endpoints in the application pipeline.

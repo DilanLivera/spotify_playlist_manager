@@ -2,7 +2,8 @@
 @using UI.Features.PlaylistDetails
 @using UI.Features.Shared.Domain
 @using UI.Infrastructure.Spotify
-@inject SpotifyService SpotifyService
+@inject SpotifyPlaylistService SpotifyPlaylistService
+@inject SpotifyTrackService SpotifyTrackService
 @inject SpotifyAuthSessionManager SpotifyAuthSessionManager
 @inject NavigationManager NavigationManager
 @implements IDisposable
@@ -488,7 +489,7 @@
     {
         try
         {
-            _playlist = await SpotifyService.GetPlaylistAsync(PlaylistId);
+            _playlist = await SpotifyPlaylistService.GetPlaylistAsync(PlaylistId);
 
             await LoadAllTracksInBackgroundAsync();
         }
@@ -533,7 +534,7 @@
             _loadingMore = true;
             StateHasChanged();
 
-            IReadOnlyList<Track> newTracks = await SpotifyService.GetPlaylistTracksAsync(PlaylistId, _offset, BatchSize, _cancellationTokenSource!.Token);
+            IReadOnlyList<Track> newTracks = await SpotifyTrackService.GetPlaylistTracksAsync(PlaylistId, _offset, BatchSize, _cancellationTokenSource!.Token);
 
             if (newTracks.Count > 0)
             {
@@ -655,7 +656,7 @@
             StateHasChanged();
 
             // Get or create the destination playlist
-            Playlist destinationPlaylist = await SpotifyService.GetOrCreatePlaylistAsync(
+            Playlist destinationPlaylist = await SpotifyPlaylistService.GetOrCreatePlaylistAsync(
                 name: _destinationPlaylistName.Trim(),
                 description: $"Tracks filtered by: {SelectedFilter.Name}");
 
@@ -663,7 +664,7 @@
             IEnumerable<string> trackUris = matchingTracks.Select(t => t.ToSpotifyUri());
 
             // Add tracks to playlist
-            await SpotifyService.AddTracksToPlaylistAsync(destinationPlaylist.Id, trackUris);
+            await SpotifyPlaylistService.AddTracksToPlaylistAsync(destinationPlaylist.Id, trackUris);
 
             _copyStatusMessage = $"Successfully copied {matchingTracks.Count} tracks to '{destinationPlaylist.Name}'.";
             _copyStatusIsError = false;
