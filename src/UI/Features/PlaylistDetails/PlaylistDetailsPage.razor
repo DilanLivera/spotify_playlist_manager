@@ -258,13 +258,16 @@
                                         }
                                         <th class="pb-2 font-medium">Title</th>
                                         <th class="pb-2 font-medium">Artist</th>
-                                        @if (!_showCompactView)
-                                        {
-                                            <th class="pb-2 font-medium">Album</th>
-                                            <th class="pb-2 font-medium">Release Date</th>
-                                            <th class="pb-2 font-medium">Mood</th>
-                                            <th class="pb-2 font-medium">V / E / D</th>
-                                        }
+                                            @if (!_showCompactView)
+                                            {
+                                                <th class="pb-2 font-medium">Album</th>
+                                                <th class="pb-2 font-medium">Release Date</th>
+                                                <th class="pb-2 font-medium">Mood</th>
+                                                <th class="pb-2 font-medium">Tempo</th>
+                                                <th class="pb-2 font-medium">Key</th>
+                                                <th class="pb-2 font-medium">Loudness</th>
+                                                <th class="pb-2 font-medium">V / E / D</th>
+                                            }
                                     </tr>
                                     </thead>
                                     <tbody>
@@ -294,6 +297,15 @@
                                                 </td>
                                                 <td class="py-3">
                                                     <div class="h-6 bg-gray-700 rounded-full w-24"></div>
+                                                </td>
+                                                <td class="py-3">
+                                                    <div class="h-4 bg-gray-700 rounded w-16"></div>
+                                                </td>
+                                                <td class="py-3">
+                                                    <div class="h-4 bg-gray-700 rounded w-12"></div>
+                                                </td>
+                                                <td class="py-3">
+                                                    <div class="h-4 bg-gray-700 rounded w-16"></div>
                                                 </td>
                                                 <td class="py-3">
                                                     <div class="h-4 bg-gray-700 rounded w-32"></div>
@@ -364,6 +376,9 @@
                                                 <th class="pb-2 font-medium">Album</th>
                                                 <th class="pb-2 font-medium">Release Date</th>
                                                 <th class="pb-2 font-medium">Mood</th>
+                                                <th class="pb-2 font-medium">Tempo</th>
+                                                <th class="pb-2 font-medium">Key</th>
+                                                <th class="pb-2 font-medium">Loudness</th>
                                                 <th class="pb-2 font-medium">V / E / D</th>
                                             }
                                         </tr>
@@ -409,8 +424,17 @@
                                                             @track.GetMood()
                                                         </span>
                                                     </td>
+                                                    <td class="py-3 text-gray-400 text-sm" title="@($"Tempo: {track.Tempo:F1} BPM")">
+                                                        @track.Tempo.ToString("F0") BPM
+                                                    </td>
+                                                    <td class="py-3 text-gray-400 text-sm" title="@($"Key: {GetMusicalKey(track.Key)} ({track.Key})")">
+                                                        @GetMusicalKey(track.Key)
+                                                    </td>
+                                                    <td class="py-3 text-gray-400 text-sm" title="@($"Loudness: {track.Loudness:F1} dB")">
+                                                        @track.Loudness.ToString("F1") dB
+                                                    </td>
                                                     <td class="py-3 text-gray-400 text-sm">
-                                                        <div class="flex gap-2">
+                                                        <div class="flex gap-2" title="Valence / Energy / Danceability">
                                                             <span title="Valence">@track.Valence.ToString("F2")</span>
                                                             <span class="text-gray-600">/</span>
                                                             <span title="Energy">@track.Energy.ToString("F2")</span>
@@ -623,6 +647,23 @@
         "Sad/Gloomy" => "bg-indigo-900/50 text-indigo-300",
         "Angry/Aggressive" => "bg-red-900/50 text-red-300",
         _ => "bg-gray-800 text-gray-400"
+    };
+
+    private string GetMusicalKey(int key) => key switch
+    {
+        0 => "C",
+        1 => "C♯/D♭",
+        2 => "D",
+        3 => "D♯/E♭",
+        4 => "E",
+        5 => "F",
+        6 => "F♯/G♭",
+        7 => "G",
+        8 => "G♯/A♭",
+        9 => "A",
+        10 => "A♯/B♭",
+        11 => "B",
+        _ => "Unknown"
     };
 
     private int GetMatchingTracksCount() => _tracks.Count(SelectedFilter.Matches);
