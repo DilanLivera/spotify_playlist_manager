@@ -11,14 +11,32 @@ public sealed class Track
     public IReadOnlyList<Artist> Artists { get; }
     public Album Album { get; }
     public string Genre { get; }
+    public float Valence { get; }
+    public float Energy { get; }
+    public float Danceability { get; }
 
-    public Track(string id, string name, IReadOnlyList<Artist> artists, Album album, string genre)
+    public Track(string id, string name, IReadOnlyList<Artist> artists, Album album, string genre, float valence = 0, float energy = 0, float danceability = 0)
     {
         Id = id;
         Name = name;
         Artists = artists;
         Album = album;
         Genre = string.IsNullOrEmpty(genre) ? "unknown" : genre;
+        Valence = valence;
+        Energy = energy;
+        Danceability = danceability;
+    }
+
+    /// <summary>
+    /// Gets the mood label based on Spotify audio features.
+    /// </summary>
+    public string GetMood()
+    {
+        if (Valence > 0.6f && Energy > 0.6f) return "Upbeat/Happy";
+        if (Valence > 0.5f && Energy < 0.4f) return "Chill/Calm";
+        if (Valence < 0.3f && Energy < 0.3f) return "Sad/Gloomy";
+        if (Valence < 0.3f && Energy > 0.7f) return "Angry/Aggressive";
+        return "Neutral";
     }
 
     /// <summary>
