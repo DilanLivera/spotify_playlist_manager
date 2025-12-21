@@ -19,10 +19,6 @@ public static class SpotifyExtensions
         // Register the authentication handler
         services.AddTransient<SpotifyAuthenticationHandler>();
 
-        // Register SpotifyService with the authentication handler (kept for backward compatibility)
-        services.AddHttpClient<SpotifyService>()
-                .AddHttpMessageHandler<SpotifyAuthenticationHandler>();
-
         // Register specialized Spotify services with the authentication handler
         services.AddHttpClient<SpotifyPlaylistService>()
                 .AddHttpMessageHandler<SpotifyAuthenticationHandler>();
