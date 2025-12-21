@@ -262,6 +262,8 @@
                                         {
                                             <th class="pb-2 font-medium">Album</th>
                                             <th class="pb-2 font-medium">Release Date</th>
+                                            <th class="pb-2 font-medium">Mood</th>
+                                            <th class="pb-2 font-medium">V / E / D</th>
                                         }
                                     </tr>
                                     </thead>
@@ -289,6 +291,12 @@
                                                 </td>
                                                 <td class="py-3">
                                                     <div class="h-4 bg-gray-700 rounded w-20"></div>
+                                                </td>
+                                                <td class="py-3">
+                                                    <div class="h-6 bg-gray-700 rounded-full w-24"></div>
+                                                </td>
+                                                <td class="py-3">
+                                                    <div class="h-4 bg-gray-700 rounded w-32"></div>
                                                 </td>
                                             }
                                         </tr>
@@ -355,6 +363,8 @@
                                             {
                                                 <th class="pb-2 font-medium">Album</th>
                                                 <th class="pb-2 font-medium">Release Date</th>
+                                                <th class="pb-2 font-medium">Mood</th>
+                                                <th class="pb-2 font-medium">V / E / D</th>
                                             }
                                         </tr>
                                         </thead>
@@ -394,6 +404,20 @@
                                                 {
                                                     <td class="py-3 text-gray-400">@track.Album?.Name</td>
                                                     <td class="py-3 text-gray-400">@track.Album?.ReleaseDate</td>
+                                                    <td class="py-3">
+                                                        <span class="px-2 py-1 rounded-full text-xs font-semibold @GetMoodClass(track.GetMood())">
+                                                            @track.GetMood()
+                                                        </span>
+                                                    </td>
+                                                    <td class="py-3 text-gray-400 text-sm">
+                                                        <div class="flex gap-2">
+                                                            <span title="Valence">@track.Valence.ToString("F2")</span>
+                                                            <span class="text-gray-600">/</span>
+                                                            <span title="Energy">@track.Energy.ToString("F2")</span>
+                                                            <span class="text-gray-600">/</span>
+                                                            <span title="Danceability">@track.Danceability.ToString("F2")</span>
+                                                        </div>
+                                                    </td>
                                                 }
                                             </tr>
                                             trackNumber++;
@@ -591,6 +615,15 @@
     }
 
     private bool IsSectionCollapsed(string key) => _collapsedSections.Contains(key);
+
+    private string GetMoodClass(string mood) => mood switch
+    {
+        "Upbeat/Happy" => "bg-yellow-900/50 text-yellow-300",
+        "Chill/Calm" => "bg-blue-900/50 text-blue-300",
+        "Sad/Gloomy" => "bg-indigo-900/50 text-indigo-300",
+        "Angry/Aggressive" => "bg-red-900/50 text-red-300",
+        _ => "bg-gray-800 text-gray-400"
+    };
 
     private int GetMatchingTracksCount() => _tracks.Count(SelectedFilter.Matches);
 
