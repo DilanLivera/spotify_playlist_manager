@@ -81,6 +81,8 @@ The commit-msg hook validates:
 
 - View all your Spotify playlists
 - Sort playlist tracks by genre or decade
+- **Track Mood Analysis**: Automatically categorizes tracks into moods (Happy, Chill, Sad, Angry) based on Spotify audio features
+- **Detailed Audio Features**: View Valence, Energy, and Danceability scores for each track
 - Compact and detailed views of your organized music
 - Copy tracks to another playlist using configurable filters (e.g., songs from 2000 onwards)
 
