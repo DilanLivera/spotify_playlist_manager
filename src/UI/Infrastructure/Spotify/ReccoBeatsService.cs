@@ -15,7 +15,7 @@ public sealed class ReccoBeatsService
     {
         _httpClient = httpClient;
         _logger = logger;
-        _httpClient.BaseAddress = new Uri("https://reccobeats.com/api/");
+        _httpClient.BaseAddress = new Uri("https://api.reccobeats.com/");
     }
 
     /// <summary>
