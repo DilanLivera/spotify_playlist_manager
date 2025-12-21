@@ -11,20 +11,52 @@ public sealed class Track
     public IReadOnlyList<Artist> Artists { get; }
     public Album Album { get; }
     public string Genre { get; }
-    public float Valence { get; }
-    public float Energy { get; }
+    public float Acousticness { get; }
     public float Danceability { get; }
+    public float Energy { get; }
+    public float Instrumentalness { get; }
+    public int Key { get; }
+    public float Liveness { get; }
+    public float Loudness { get; }
+    public int Mode { get; }
+    public float Speechiness { get; }
+    public float Tempo { get; }
+    public float Valence { get; }
 
-    public Track(string id, string name, IReadOnlyList<Artist> artists, Album album, string genre, float valence = 0, float energy = 0, float danceability = 0)
+    public Track(
+        string id, 
+        string name, 
+        IReadOnlyList<Artist> artists, 
+        Album album, 
+        string genre, 
+        float acousticness = 0,
+        float danceability = 0,
+        float energy = 0,
+        float instrumentalness = 0,
+        int key = 0,
+        float liveness = 0,
+        float loudness = 0,
+        int mode = 0,
+        float speechiness = 0,
+        float tempo = 0,
+        float valence = 0)
     {
         Id = id;
         Name = name;
         Artists = artists;
         Album = album;
         Genre = string.IsNullOrEmpty(genre) ? "unknown" : genre;
-        Valence = valence;
-        Energy = energy;
+        Acousticness = acousticness;
         Danceability = danceability;
+        Energy = energy;
+        Instrumentalness = instrumentalness;
+        Key = key;
+        Liveness = liveness;
+        Loudness = loudness;
+        Mode = mode;
+        Speechiness = speechiness;
+        Tempo = tempo;
+        Valence = valence;
     }
 
     /// <summary>
