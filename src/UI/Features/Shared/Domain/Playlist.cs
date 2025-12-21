@@ -24,30 +24,18 @@ public sealed class Playlist
     /// <summary>
     /// Groups tracks by their genre.
     /// </summary>
-    public Dictionary<string, List<Track>> GroupTracksByGenre(IEnumerable<Track> tracks)
-    {
-        return tracks
-            .GroupBy(t => t.Genre)
-            .ToDictionary(g => g.Key, g => g.ToList());
-    }
+    public Dictionary<string, List<Track>> GroupTracksByGenre(IEnumerable<Track> tracks) => tracks.GroupBy(t => t.Genre)
+                                                                                                  .ToDictionary(g => g.Key, g => g.ToList());
 
     /// <summary>
     /// Groups tracks by their decade.
     /// </summary>
-    public Dictionary<string, List<Track>> GroupTracksByDecade(IEnumerable<Track> tracks)
-    {
-        return tracks
-            .GroupBy(t => t.GetDecade())
-            .OrderBy(g => g.Key)
-            .ToDictionary(g => g.Key, g => g.ToList());
-    }
+    public Dictionary<string, List<Track>> GroupTracksByDecade(IEnumerable<Track> tracks) => tracks.GroupBy(t => t.GetDecade())
+                                                                                                   .OrderBy(g => g.Key)
+                                                                                                   .ToDictionary(g => g.Key, g => g.ToList());
 
     /// <summary>
     /// Filters tracks using the provided filter.
     /// </summary>
-    public IEnumerable<Track> FilterTracks(IEnumerable<Track> tracks, Func<Track, bool> predicate)
-    {
-        return tracks.Where(predicate);
-    }
+    public IEnumerable<Track> FilterTracks(IEnumerable<Track> tracks, Func<Track, bool> predicate) => tracks.Where(predicate);
 }
-

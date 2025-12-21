@@ -65,4 +65,3 @@ public sealed class ReccoBeatsAudioFeatures
     [JsonPropertyName("valence")]
     public float Valence { get; init; }
 }
-

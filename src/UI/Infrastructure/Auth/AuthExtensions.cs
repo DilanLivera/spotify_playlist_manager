@@ -56,7 +56,10 @@ public static class AuthExtensions
         app.MapGet(pattern: "/signin",
                    async (HttpContext context) =>
                    {
-                       AuthenticationProperties properties = new() { RedirectUri = "/" };
+                       AuthenticationProperties properties = new()
+                                                             {
+                                                                 RedirectUri = "/"
+                                                             };
                        await context.ChallengeAsync(GoogleDefaults.AuthenticationScheme, properties);
 
                        return Results.Empty;
@@ -73,4 +76,3 @@ public static class AuthExtensions
         return app;
     }
 }
-

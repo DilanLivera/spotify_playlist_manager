@@ -1,5 +1,4 @@
 @page "/playlist/{PlaylistId}"
-@using UI.Features.PlaylistDetails
 @using UI.Features.Shared.Domain
 @using UI.Infrastructure.Spotify
 @inject SpotifyPlaylistService SpotifyPlaylistService
@@ -144,17 +143,17 @@
             <p class="text-gray-400 mt-2">
                 @if (_isLoading)
                 {
-                    <div class="flex items-center justify-between flex-wrap gap-2">
+                <div class="flex items-center justify-between flex-wrap gap-2">
                         <span class="flex items-center">
                             <div class="animate-spin rounded-full h-4 w-4 mr-2 border-t-2 border-b-2 border-green-500"></div>
                             Loading tracks... (@_tracks.Count of @(_playlist?.TrackCount ?? 0) loaded, @((_playlist?.TrackCount ?? 0) - _tracks.Count) remaining)
                         </span>
-                    </div>
-                }
-                else
-                {
-                    <span>All @_tracks.Count tracks loaded in @_groupedTracks.Count @(_sortingBy == SortingOption.Genre ? "genres" : "decades")</span>
-                }
+                </div>
+            }
+            else
+            {
+                <span>All @_tracks.Count tracks loaded in @_groupedTracks.Count @(_sortingBy == SortingOption.Genre ? "genres" : "decades")</span>
+            }
             </p>
         </div>
 
@@ -259,12 +258,12 @@
                                         }
                                         <th class="pb-2 font-medium">Title</th>
                                         <th class="pb-2 font-medium">Artist</th>
-                                            @if (!_showCompactView)
-                                            {
-                                                <th class="pb-2 font-medium">Album</th>
-                                                <th class="pb-2 font-medium">Release Date</th>
-                                                <th class="pb-2 font-medium">Mood</th>
-                                            }
+                                        @if (!_showCompactView)
+                                        {
+                                            <th class="pb-2 font-medium">Album</th>
+                                            <th class="pb-2 font-medium">Release Date</th>
+                                            <th class="pb-2 font-medium">Mood</th>
+                                        }
                                     </tr>
                                     </thead>
                                     <tbody>
@@ -521,6 +520,7 @@
         catch (OperationCanceledException)
         {
             _isLoading = false;
+
             throw;
         }
     }
@@ -646,6 +646,7 @@
         {
             _copyStatusMessage = "No tracks match the selected filter.";
             _copyStatusIsError = true;
+
             return;
         }
 
@@ -656,9 +657,8 @@
             StateHasChanged();
 
             // Get or create the destination playlist
-            Playlist destinationPlaylist = await SpotifyPlaylistService.GetOrCreatePlaylistAsync(
-                name: _destinationPlaylistName.Trim(),
-                description: $"Tracks filtered by: {SelectedFilter.Name}");
+            Playlist destinationPlaylist = await SpotifyPlaylistService.GetOrCreatePlaylistAsync(name: _destinationPlaylistName.Trim(),
+                                                                                                 description: $"Tracks filtered by: {SelectedFilter.Name}");
 
             // Convert track IDs to Spotify URIs
             IEnumerable<string> trackUris = matchingTracks.Select(t => t.ToSpotifyUri());

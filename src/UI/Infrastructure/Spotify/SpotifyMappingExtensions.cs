@@ -15,9 +15,9 @@ public static class SpotifyMappingExtensions
     public static Track MapToDomain(this SpotifyTrack dto, Dictionary<string, ReccoBeatsAudioFeatures>? audioFeatures = null)
     {
         IReadOnlyList<Artist> artists = dto.Artists
-            .Select(a => new Artist(id: a.Id, name: a.Name))
-            .ToList()
-            .AsReadOnly();
+                                           .Select(a => new Artist(id: a.Id, name: a.Name))
+                                           .ToList()
+                                           .AsReadOnly();
 
         Album album = new(id: dto.Album.Id,
                           name: dto.Album.Name,
@@ -27,30 +27,30 @@ public static class SpotifyMappingExtensions
         ReccoBeatsAudioFeatures? features = null;
         audioFeatures?.TryGetValue(dto.Id, out features);
 
-        return new Track(
-            id: dto.Id,
-            name: dto.Name,
-            artists: artists,
-            album: album,
-            genre: dto.Genre,
-            acousticness: features?.Acousticness ?? 0,
-            danceability: features?.Danceability ?? 0,
-            energy: features?.Energy ?? 0,
-            instrumentalness: features?.Instrumentalness ?? 0,
-            key: features?.Key ?? 0,
-            liveness: features?.Liveness ?? 0,
-            loudness: features?.Loudness ?? 0,
-            mode: features?.Mode ?? 0,
-            speechiness: features?.Speechiness ?? 0,
-            tempo: features?.Tempo ?? 0,
-            valence: features?.Valence ?? 0);
+        return new Track(id: dto.Id,
+                         name: dto.Name,
+                         artists: artists,
+                         album: album,
+                         genre: dto.Genre,
+                         acousticness: features?.Acousticness ?? 0,
+                         danceability: features?.Danceability ?? 0,
+                         energy: features?.Energy ?? 0,
+                         instrumentalness: features?.Instrumentalness ?? 0,
+                         key: features?.Key ?? 0,
+                         liveness: features?.Liveness ?? 0,
+                         loudness: features?.Loudness ?? 0,
+                         mode: features?.Mode ?? 0,
+                         speechiness: features?.Speechiness ?? 0,
+                         tempo: features?.Tempo ?? 0,
+                         valence: features?.Valence ?? 0);
     }
 
     /// <summary>
     /// Maps a collection of Spotify API track DTOs to Domain Track entities.
     /// </summary>
-    public static IReadOnlyList<Track> MapToDomain(this IEnumerable<SpotifyTrack> dtos,
-                                                   Dictionary<string, ReccoBeatsAudioFeatures>? audioFeatures = null)
+    public static IReadOnlyList<Track> MapToDomain(
+        this IEnumerable<SpotifyTrack> dtos,
+        Dictionary<string, ReccoBeatsAudioFeatures>? audioFeatures = null)
         => dtos.Select(t => t.MapToDomain(audioFeatures))
                .ToList()
                .AsReadOnly();
@@ -72,4 +72,3 @@ public static class SpotifyMappingExtensions
                                                                                                      .AsReadOnly();
 
 }
-

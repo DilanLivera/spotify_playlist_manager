@@ -35,7 +35,9 @@ public sealed class SpotifyTrackService
         activity?.SetTag("playlist.limit", limit);
 
         _logger.LogDebug("Fetching tracks for playlist {PlaylistId} (offset: {Offset}, limit: {Limit})",
-            playlistId, offset, limit);
+                         playlistId,
+                         offset,
+                         limit);
 
         try
         {
@@ -44,19 +46,19 @@ public sealed class SpotifyTrackService
             PlaylistTrackResponse trackResponse = await _httpClient.GetFromJsonAsync<PlaylistTrackResponse>(requestUri, cancellationToken) ?? throw new InvalidOperationException("Response can not be null");
 
             SpotifyTrack[] dtoTracks = trackResponse.Items
-                                                 .Select(i => i.Track)
-                                                 .ToArray();
+                                                    .Select(i => i.Track)
+                                                    .ToArray();
 
             // Enrich tracks with genres and get audio features for mapping
             await _trackEnricher.EnrichTracksAsync(dtoTracks, cancellationToken);
-            Dictionary<string, ReccoBeatsAudioFeatures> audioFeatures = await _trackEnricher.GetAudioFeaturesAsync(
-                dtoTracks.Select(t => t.Id).ToArray(), 
-                cancellationToken);
+            Dictionary<string, ReccoBeatsAudioFeatures> audioFeatures = await _trackEnricher.GetAudioFeaturesAsync(dtoTracks.Select(t => t.Id).ToArray(),
+                                                                                                                   cancellationToken);
 
             Track[] tracks = dtoTracks.MapToDomain(audioFeatures).ToArray();
 
             _logger.LogInformation("Fetched {TrackCount} tracks for playlist {PlaylistId}",
-                tracks.Length, playlistId);
+                                   tracks.Length,
+                                   playlistId);
             activity?.SetTag("track.count", tracks.Length);
 
             return tracks;
@@ -69,8 +71,8 @@ public sealed class SpotifyTrackService
                              offset,
                              limit);
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+
             throw;
         }
     }
 }
-

@@ -15,9 +15,8 @@ public static class ObservabilityExtensions
     public static IServiceCollection AddObservability(this IServiceCollection services, IConfiguration configuration)
     {
         Action<ResourceBuilder> configureResource = resource => resource
-            .AddService(
-                serviceName: ServiceName,
-                serviceVersion: typeof(ObservabilityExtensions).Assembly.GetName().Version?.ToString() ?? "1.0.0");
+            .AddService(serviceName: ServiceName,
+                        serviceVersion: typeof(ObservabilityExtensions).Assembly.GetName().Version?.ToString() ?? "1.0.0");
 
         services.AddOpenTelemetry()
                 .ConfigureResource(configureResource)
@@ -110,4 +109,3 @@ public static class ObservabilityExtensions
     /// </summary>
     public static Activity? StartActivity(string name) => ActivitySource.StartActivity(name);
 }
-

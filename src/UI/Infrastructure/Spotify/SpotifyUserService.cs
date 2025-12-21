@@ -30,8 +30,7 @@ public sealed class SpotifyUserService
 
         try
         {
-            SpotifyUser user = await _httpClient.GetFromJsonAsync<SpotifyUser>(requestUri: "me")
-                ?? throw new InvalidOperationException("Response can not be null");
+            SpotifyUser user = await _httpClient.GetFromJsonAsync<SpotifyUser>(requestUri: "me") ?? throw new InvalidOperationException("Response can not be null");
 
             _logger.LogInformation("Fetched current user {UserId}", user.Id);
             activity?.SetTag("user.id", user.Id);
@@ -47,4 +46,3 @@ public sealed class SpotifyUserService
         }
     }
 }
-

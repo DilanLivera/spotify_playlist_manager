@@ -39,6 +39,7 @@ public sealed class ReccoBeatsService
             {
                 _logger.LogWarning("Track {SpotifyTrackId} not found in ReccoBeats database", spotifyTrackId);
                 activity?.SetTag("track.not_found", true);
+
                 return null;
             }
 
@@ -50,12 +51,14 @@ public sealed class ReccoBeatsService
         catch (OperationCanceledException)
         {
             _logger.LogDebug("Audio features request cancelled for track {SpotifyTrackId}", spotifyTrackId);
+
             throw;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error fetching audio features for track {SpotifyTrackId}", spotifyTrackId);
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+
             return null;
         }
     }
@@ -83,6 +86,7 @@ public sealed class ReccoBeatsService
         catch (HttpRequestException ex)
         {
             _logger.LogWarning(ex, "HTTP error looking up track {SpotifyTrackId}", spotifyTrackId);
+
             return null;
         }
     }
@@ -111,6 +115,7 @@ public sealed class ReccoBeatsService
                     if (retryCount > maxRetries)
                     {
                         _logger.LogWarning("Max retries reached for track {SpotifyTrackId} due to rate limiting", spotifyTrackId);
+
                         return null;
                     }
 
@@ -126,9 +131,13 @@ public sealed class ReccoBeatsService
                     }
 
                     _logger.LogInformation("Rate limited for track {SpotifyTrackId}, waiting {RetryAfter} seconds before retry {RetryCount}/{MaxRetries}",
-                        spotifyTrackId, retryAfter.TotalSeconds, retryCount, maxRetries);
+                                           spotifyTrackId,
+                                           retryAfter.TotalSeconds,
+                                           retryCount,
+                                           maxRetries);
 
                     await Task.Delay(retryAfter, cancellationToken);
+
                     continue;
                 }
 
@@ -136,6 +145,7 @@ public sealed class ReccoBeatsService
                 if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
                 {
                     _logger.LogWarning("Audio features not found for track {SpotifyTrackId} in ReccoBeats", spotifyTrackId);
+
                     return null;
                 }
 
@@ -146,15 +156,18 @@ public sealed class ReccoBeatsService
                 if (result != null)
                 {
                     _logger.LogDebug("Successfully fetched audio features for track {SpotifyTrackId}", spotifyTrackId);
+
                     return result;
                 }
 
                 _logger.LogWarning("ReccoBeats API returned null response for track {SpotifyTrackId}", spotifyTrackId);
+
                 return null;
             }
             catch (HttpRequestException ex)
             {
                 _logger.LogWarning(ex, "HTTP error fetching audio features for track {SpotifyTrackId}", spotifyTrackId);
+
                 return null;
             }
         }
@@ -162,4 +175,3 @@ public sealed class ReccoBeatsService
         return null;
     }
 }
-

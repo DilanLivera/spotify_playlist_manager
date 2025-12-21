@@ -10,4 +10,3 @@ public sealed record ArtistsResponse
     [JsonPropertyName("artists")]
     public List<SpotifyArtist> Artists { get; init; } = [];
 }
-

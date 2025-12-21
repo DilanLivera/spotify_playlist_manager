@@ -70,4 +70,3 @@ public sealed record SpotifyAudioFeatures
     [JsonPropertyName("danceability")]
     public float Danceability { get; init; }
 }
-

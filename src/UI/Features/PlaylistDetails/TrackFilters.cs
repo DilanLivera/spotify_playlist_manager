@@ -82,4 +82,3 @@ public sealed class CompositeFilter : ITrackFilter
 
     public bool Matches(Track track) => _filters.All(f => f.Matches(track));
 }
-

@@ -36,18 +36,28 @@ public sealed class SpotifyAuthService
         if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(redirectUri))
         {
             _logger.LogError("Spotify configuration missing: ClientId={HasClientId}, RedirectUri={HasRedirectUri}",
-                !string.IsNullOrEmpty(clientId), !string.IsNullOrEmpty(redirectUri));
+                             !string.IsNullOrEmpty(clientId),
+                             !string.IsNullOrEmpty(redirectUri));
+
             return string.Empty;
         }
 
         Dictionary<string, string?> queryParams = new()
                                                   {
-                                                      { "client_id", clientId },
-                                                      { "response_type", "code" },
-                                                      { "redirect_uri", redirectUri },
+                                                      {
+                                                          "client_id", clientId
+                                                      },
+                                                      {
+                                                          "response_type", "code"
+                                                      },
+                                                      {
+                                                          "redirect_uri", redirectUri
+                                                      },
                                                       // https://developer.spotify.com/documentation/web-api/concepts/scopes
                                                       // please use %20 instead of " " when adding scopes.
-                                                      { "scope", "playlist-read-private playlist-modify-private playlist-modify-public user-read-recently-played" }
+                                                      {
+                                                          "scope", "playlist-read-private playlist-modify-private playlist-modify-public user-read-recently-played"
+                                                      }
                                                   };
 
         _logger.LogDebug("Authorization URL built with redirect URI {RedirectUri}", redirectUri);
@@ -70,15 +80,29 @@ public sealed class SpotifyAuthService
             if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(clientSecret) || string.IsNullOrEmpty(redirectUri))
             {
                 _logger.LogError("Spotify configuration incomplete: ClientId={HasClientId}, ClientSecret={HasClientSecret}, RedirectUri={HasRedirectUri}",
-                    !string.IsNullOrEmpty(clientId), !string.IsNullOrEmpty(clientSecret), !string.IsNullOrEmpty(redirectUri));
+                                 !string.IsNullOrEmpty(clientId),
+                                 !string.IsNullOrEmpty(clientSecret),
+                                 !string.IsNullOrEmpty(redirectUri));
                 activity?.SetStatus(ActivityStatusCode.Error, "Missing configuration");
+
                 return (AccessToken: string.Empty, RefreshToken: string.Empty);
             }
 
             string auth = Convert.ToBase64String(inArray: Encoding.UTF8.GetBytes($"{clientId}:{clientSecret}"));
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(scheme: "Basic", auth);
 
-            Dictionary<string, string> parameters = new() { { "grant_type", "authorization_code" }, { "code", code }, { "redirect_uri", redirectUri } };
+            Dictionary<string, string> parameters = new()
+                                                    {
+                                                        {
+                                                            "grant_type", "authorization_code"
+                                                        },
+                                                        {
+                                                            "code", code
+                                                        },
+                                                        {
+                                                            "redirect_uri", redirectUri
+                                                        }
+                                                    };
             FormUrlEncodedContent content = new(parameters);
 
             HttpResponseMessage response = await _httpClient.PostAsync(requestUri: "https://accounts.spotify.com/api/token", content);
@@ -100,12 +124,14 @@ public sealed class SpotifyAuthService
         {
             _logger.LogError(ex, "HTTP error exchanging code for tokens: {StatusCode}", ex.StatusCode);
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+
             return (AccessToken: string.Empty, RefreshToken: string.Empty);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error exchanging code for tokens");
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+
             return (AccessToken: string.Empty, RefreshToken: string.Empty);
         }
     }
@@ -125,13 +151,22 @@ public sealed class SpotifyAuthService
             {
                 _logger.LogError("Spotify client credentials not configured");
                 activity?.SetStatus(ActivityStatusCode.Error, "Missing credentials");
+
                 return string.Empty;
             }
 
             string auth = Convert.ToBase64String(inArray: Encoding.UTF8.GetBytes($"{clientId}:{clientSecret}"));
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(scheme: "Basic", auth);
 
-            Dictionary<string, string> parameters = new() { { "grant_type", "refresh_token" }, { "refresh_token", refreshToken } };
+            Dictionary<string, string> parameters = new()
+                                                    {
+                                                        {
+                                                            "grant_type", "refresh_token"
+                                                        },
+                                                        {
+                                                            "refresh_token", refreshToken
+                                                        }
+                                                    };
             FormUrlEncodedContent content = new(parameters);
 
             HttpResponseMessage response = await _httpClient.PostAsync(requestUri: "https://accounts.spotify.com/api/token", content);
@@ -149,12 +184,14 @@ public sealed class SpotifyAuthService
         {
             _logger.LogError(ex, "HTTP error refreshing access token: {StatusCode}", ex.StatusCode);
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+
             return string.Empty;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error refreshing access token");
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+
             return string.Empty;
         }
     }
@@ -172,6 +209,7 @@ public sealed class SpotifyAuthService
         {
             _logger.LogWarning("No refresh token available in session, user needs to re-authenticate");
             activity?.SetStatus(ActivityStatusCode.Error, "No refresh token");
+
             return false;
         }
 
@@ -180,12 +218,14 @@ public sealed class SpotifyAuthService
         {
             _logger.LogError("Token refresh failed, user needs to re-authenticate");
             activity?.SetStatus(ActivityStatusCode.Error, "Refresh failed");
+
             return false;
         }
 
         _sessionManager.UpdateAccessToken(newAccessToken);
         _logger.LogInformation("Session updated with new access token");
         activity?.SetTag("auth.session_updated", true);
+
         return true;
     }
 }

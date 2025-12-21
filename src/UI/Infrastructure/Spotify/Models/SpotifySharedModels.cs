@@ -31,4 +31,3 @@ public sealed record SpotifyArtist
     [JsonPropertyName("genres")]
     public List<string> Genres { get; init; } = [];
 }
-

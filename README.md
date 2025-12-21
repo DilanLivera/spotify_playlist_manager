@@ -67,6 +67,7 @@ git config core.hooksPath .githooks
 ```
 
 The commit-msg hook validates:
+
 - Conventional commit format (`type: description`)
 - Subject line maximum 72 characters
 - No trailing period on subject line
@@ -104,6 +105,7 @@ src/UI/
 ### Domain Layer
 
 Domain entities are pure C# classes located in `Features/Shared/Domain/`:
+
 - **Track**: Represents a music track with business logic for decade calculation, artist display, etc.
 - **Playlist**: Represents a Spotify playlist aggregate
 
@@ -112,6 +114,7 @@ Domain entities encapsulate business rules and are independent of infrastructure
 ### Infrastructure Layer
 
 The Infrastructure layer handles technical details:
+
 - **Spotify API Client**: HTTP communication with Spotify Web API
 - **DTOs**: Data Transfer Objects for API serialization (decorated with `[JsonPropertyName]`)
 - **Mapping**: Extension methods to convert DTOs to Domain entities (`MapToDomain()`)
@@ -120,6 +123,7 @@ The Infrastructure layer handles technical details:
 #### API Optimization
 
 The `SpotifyService` uses bulk fetching to minimize API calls:
+
 - **Bulk Artist Genres**: Uses Spotify's `/v1/artists?ids=...` endpoint to fetch up to 50 artist genres per request
 - **Audio Features from ReccoBeats**: Fetches audio features from [ReccoBeats API](https://reccobeats.com/docs/apis/reccobeats-api) with rate limiting support
 - **Automatic Loading**: Playlist tracks are automatically loaded in the background in batches of 100
@@ -152,10 +156,10 @@ public interface ITrackFilter
 
 ### Available Filters
 
-| Filter | Description |
-|--------|-------------|
+| Filter            | Description                                       |
+|-------------------|---------------------------------------------------|
 | `YearRangeFilter` | Filter tracks by release year range (e.g., 2000+) |
-| `CompositeFilter` | Combine multiple filters with AND logic |
+| `CompositeFilter` | Combine multiple filters with AND logic           |
 
 ### Adding New Filters
 

@@ -87,4 +87,3 @@ public sealed record AddTracksRequest
     [JsonPropertyName("uris")]
     public required IEnumerable<string> Uris { get; init; }
 }
-

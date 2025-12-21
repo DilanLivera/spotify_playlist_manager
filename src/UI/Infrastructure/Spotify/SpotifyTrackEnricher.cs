@@ -34,11 +34,10 @@ public sealed class SpotifyTrackEnricher
         activity?.SetTag("track.count", tracks.Length);
 
         // Extract unique artist IDs
-        string[] uniqueArtistIds = tracks
-            .Where(t => t.Artists.Count > 0)
-            .Select(t => t.Artists[0].Id)
-            .Distinct()
-            .ToArray();
+        string[] uniqueArtistIds = tracks.Where(t => t.Artists.Count > 0)
+                                         .Select(t => t.Artists[0].Id)
+                                         .Distinct()
+                                         .ToArray();
 
         // Bulk fetch genres for all unique artists
         Dictionary<string, string> artistGenres = await GetArtistsGenresAsync(uniqueArtistIds, cancellationToken);
@@ -96,13 +95,15 @@ public sealed class SpotifyTrackEnricher
             }
 
             _logger.LogInformation("Fetched audio features for {SuccessCount}/{TotalCount} tracks from ReccoBeats",
-                audioFeaturesMap.Count, trackIds.Length);
+                                   audioFeaturesMap.Count,
+                                   trackIds.Length);
 
             return audioFeaturesMap;
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             _logger.LogWarning(ex, "Error getting audio features from ReccoBeats, returning partial results");
+
             return audioFeaturesMap;
         }
     }
@@ -122,11 +123,13 @@ public sealed class SpotifyTrackEnricher
         {
             // Spotify allows up to 50 artist IDs per request
             const int batchSize = 50;
-            List<string[]> batches = artistIds
-                .Select((id, index) => new { id, index })
-                .GroupBy(x => x.index / batchSize)
-                .Select(g => g.Select(x => x.id).ToArray())
-                .ToList();
+            List<string[]> batches = artistIds.Select((id, index) => new
+                                                                     {
+                                                                         id, index
+                                                                     })
+                                              .GroupBy(x => x.index / batchSize)
+                                              .Select(g => g.Select(x => x.id).ToArray())
+                                              .ToList();
 
             foreach (string[] batch in batches)
             {
@@ -135,8 +138,7 @@ public sealed class SpotifyTrackEnricher
                 string ids = string.Join(",", batch);
                 string requestUri = $"artists?ids={ids}";
 
-                ArtistsResponse response = await _httpClient.GetFromJsonAsync<ArtistsResponse>(requestUri, cancellationToken)
-                    ?? throw new InvalidOperationException("Response can not be null");
+                ArtistsResponse response = await _httpClient.GetFromJsonAsync<ArtistsResponse>(requestUri, cancellationToken) ?? throw new InvalidOperationException("Response can not be null");
 
                 foreach (SpotifyArtist artist in response.Artists)
                 {
@@ -154,8 +156,8 @@ public sealed class SpotifyTrackEnricher
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             _logger.LogWarning(ex, "Error getting artist genres in bulk, returning partial results");
+
             return artistGenres;
         }
     }
 }
-

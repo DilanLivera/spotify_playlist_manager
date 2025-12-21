@@ -128,6 +128,7 @@ public sealed class Track
             return "Sad/Gloomy";
         if (Valence < 0.3f && Energy > 0.7f)
             return "Angry/Aggressive";
+
         return "Neutral";
     }
 
@@ -144,6 +145,7 @@ public sealed class Track
         if (int.TryParse(Album.ReleaseDate[..4], out int year))
         {
             int decade = year / 10 * 10;
+
             return $"{decade}s";
         }
 
@@ -212,4 +214,3 @@ public sealed class Album
         ReleaseDate = releaseDate;
     }
 }
-

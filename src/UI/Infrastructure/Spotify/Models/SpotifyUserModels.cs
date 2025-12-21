@@ -13,4 +13,3 @@ public sealed record SpotifyUser
     [JsonPropertyName("display_name")]
     public string DisplayName { get; init; } = string.Empty;
 }
-

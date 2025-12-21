@@ -64,12 +64,13 @@ public sealed class SpotifyPlaylistService
             string requestUri = $"playlists/{playlistId}";
 
             SpotifyPlaylist playlistDto = await _httpClient.GetFromJsonAsync<SpotifyPlaylist>(requestUri) ??
-                                       throw new InvalidOperationException("Response can not be null");
+                                          throw new InvalidOperationException("Response can not be null");
 
             Playlist playlist = playlistDto.MapToDomain();
 
             _logger.LogInformation("Fetched playlist {PlaylistName} ({PlaylistId})",
-                playlist.Name, playlistId);
+                                   playlist.Name,
+                                   playlistId);
             activity?.SetTag("playlist.name", playlist.Name);
 
             return playlist;
@@ -80,6 +81,7 @@ public sealed class SpotifyPlaylistService
                              "Error getting playlist details for playlist {PlaylistId}",
                              playlistId);
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+
             throw;
         }
     }
@@ -97,17 +99,14 @@ public sealed class SpotifyPlaylistService
             string requestUri = $"users/{user.Id}/playlists";
 
             CreatePlaylistRequest request = new()
-            {
-                Name = name,
-                Description = description,
-                Public = false
-            };
+                                            {
+                                                Name = name, Description = description, Public = false
+                                            };
 
             HttpResponseMessage response = await _httpClient.PostAsJsonAsync(requestUri, request);
             response.EnsureSuccessStatusCode();
 
-            SpotifyPlaylist playlistDto = await response.Content.ReadFromJsonAsync<SpotifyPlaylist>()
-                ?? throw new InvalidOperationException("Response can not be null");
+            SpotifyPlaylist playlistDto = await response.Content.ReadFromJsonAsync<SpotifyPlaylist>() ?? throw new InvalidOperationException("Response can not be null");
 
             Playlist playlist = playlistDto.MapToDomain();
 
@@ -137,7 +136,10 @@ public sealed class SpotifyPlaylistService
         {
             string requestUri = $"playlists/{playlistId}/tracks";
 
-            AddTracksRequest request = new() { Uris = uriList };
+            AddTracksRequest request = new()
+                                       {
+                                           Uris = uriList
+                                       };
 
             HttpResponseMessage response = await _httpClient.PostAsJsonAsync(requestUri, request);
             response.EnsureSuccessStatusCode();
@@ -163,7 +165,7 @@ public sealed class SpotifyPlaylistService
 
         List<Playlist> playlists = await GetUserPlaylistsAsync();
         Playlist? playlist = playlists.FirstOrDefault(p =>
-            p.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+                                                          p.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 
         if (playlist != null)
         {
@@ -192,6 +194,7 @@ public sealed class SpotifyPlaylistService
         if (existingPlaylist != null)
         {
             activity?.SetTag("playlist.created", false);
+
             return existingPlaylist;
         }
 
@@ -201,4 +204,3 @@ public sealed class SpotifyPlaylistService
         return newPlaylist;
     }
 }
-

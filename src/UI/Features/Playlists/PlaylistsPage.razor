@@ -85,6 +85,7 @@
         if (!SpotifyAuthSessionManager.IsAuthenticated())
         {
             NavigationManager.NavigateTo(uri: "/spotify-auth");
+
             return;
         }
 
