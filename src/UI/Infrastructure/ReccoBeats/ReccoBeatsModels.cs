@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace UI.Infrastructure.Spotify;
+namespace UI.Infrastructure.ReccoBeats;
 
 /// <summary>
 /// Response from ReccoBeats track lookup endpoint.

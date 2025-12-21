@@ -1,5 +1,7 @@
 namespace UI.Infrastructure.Spotify;
 
+using UI.Infrastructure.ReccoBeats;
+
 /// <summary>
 /// Extension methods for configuring Spotify services and endpoints.
 /// </summary>

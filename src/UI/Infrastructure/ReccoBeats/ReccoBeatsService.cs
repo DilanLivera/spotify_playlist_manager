@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using UI.Infrastructure.Observability;
 
-namespace UI.Infrastructure.Spotify;
+namespace UI.Infrastructure.ReccoBeats;
 
 /// <summary>
 /// Service for interacting with ReccoBeats API for audio features.

@@ -1,4 +1,5 @@
 using UI.Features.Shared.Domain;
+using UI.Infrastructure.ReccoBeats;
 
 namespace UI.Infrastructure.Spotify;
 

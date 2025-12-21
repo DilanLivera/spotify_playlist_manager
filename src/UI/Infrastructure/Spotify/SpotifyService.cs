@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Net.Http.Headers;
 using UI.Features.Shared.Domain;
 using UI.Infrastructure.Observability;
+using UI.Infrastructure.ReccoBeats;
 
 namespace UI.Infrastructure.Spotify;
 
