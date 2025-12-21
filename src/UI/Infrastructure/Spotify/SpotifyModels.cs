@@ -141,3 +141,24 @@ public sealed class ArtistsResponse
     [JsonPropertyName("artists")]
     public List<SpotifyArtist> Artists { get; init; } = [];
 }
+
+public sealed class AudioFeaturesResponse
+{
+    [JsonPropertyName("audio_features")]
+    public List<SpotifyAudioFeatures?> AudioFeatures { get; init; } = [];
+}
+
+public sealed class SpotifyAudioFeatures
+{
+    [JsonPropertyName("id")]
+    public string Id { get; init; } = string.Empty;
+
+    [JsonPropertyName("valence")]
+    public float Valence { get; init; }
+
+    [JsonPropertyName("energy")]
+    public float Energy { get; init; }
+
+    [JsonPropertyName("danceability")]
+    public float Danceability { get; init; }
+}

@@ -10,7 +10,7 @@ public static class SpotifyMappingExtensions
     /// <summary>
     /// Maps a Spotify API track DTO to a Domain Track entity.
     /// </summary>
-    public static Track MapToDomain(this SpotifyTrack dto)
+    public static Track MapToDomain(this SpotifyTrack dto, Dictionary<string, SpotifyAudioFeatures>? audioFeatures = null)
     {
         IReadOnlyList<Artist> artists = dto.Artists
             .Select(a => new Artist(id: a.Id, name: a.Name))
@@ -22,20 +22,26 @@ public static class SpotifyMappingExtensions
             imageUrl: dto.Album.GetAlbumImageUrl(),
             releaseDate: dto.Album.ReleaseDate);
 
+        SpotifyAudioFeatures? features = null;
+        audioFeatures?.TryGetValue(dto.Id, out features);
+
         return new Track(
             id: dto.Id,
             name: dto.Name,
             artists: artists,
             album: album,
-            genre: dto.Genre);
+            genre: dto.Genre,
+            valence: features?.Valence ?? 0,
+            energy: features?.Energy ?? 0,
+            danceability: features?.Danceability ?? 0);
     }
 
     /// <summary>
     /// Maps a collection of Spotify API track DTOs to Domain Track entities.
     /// </summary>
-    public static IReadOnlyList<Track> MapToDomain(this IEnumerable<SpotifyTrack> dtos)
+    public static IReadOnlyList<Track> MapToDomain(this IEnumerable<SpotifyTrack> dtos, Dictionary<string, SpotifyAudioFeatures>? audioFeatures = null)
     {
-        return dtos.Select(MapToDomain).ToList();
+        return dtos.Select(d => d.MapToDomain(audioFeatures)).ToList();
     }
 
     /// <summary>
