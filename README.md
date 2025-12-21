@@ -81,8 +81,8 @@ The commit-msg hook validates:
 
 - View all your Spotify playlists
 - Sort playlist tracks by genre or decade
-- **Track Mood Analysis**: Automatically categorizes tracks into moods (Happy, Chill, Sad, Angry) based on Spotify audio features
-- **Detailed Audio Features**: View Valence, Energy, and Danceability scores for each track
+- **Track Mood Analysis**: Automatically categorizes tracks into moods (Happy, Chill, Sad, Angry) based on audio features
+- **Comprehensive Audio Features**: View 11 detailed audio characteristics including Tempo, Key, Loudness, Valence, Energy, Danceability, Acousticness, Instrumentalness, Liveness, Speechiness, and Mode
 - Compact and detailed views of your organized music
 - Copy tracks to another playlist using configurable filters (e.g., songs from 2000 onwards)
 
@@ -121,10 +121,11 @@ The Infrastructure layer handles technical details:
 
 The `SpotifyService` uses bulk fetching to minimize API calls:
 - **Bulk Artist Genres**: Uses Spotify's `/v1/artists?ids=...` endpoint to fetch up to 50 artist genres per request
+- **Audio Features from ReccoBeats**: Fetches audio features from [ReccoBeats API](https://reccobeats.com/docs/apis/reccobeats-api) with rate limiting support
 - **Automatic Loading**: Playlist tracks are automatically loaded in the background in batches of 100
 - **Cancellation Support**: Background loading stops immediately when the user navigates away using `CancellationToken`
 
-This reduces API calls by ~98% compared to individual requests per track.
+This reduces genre API calls by ~98% compared to individual requests per track. Audio features are fetched sequentially from ReccoBeats with built-in rate limiting and retry logic.
 
 ### Benefits
 
