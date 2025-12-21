@@ -15,13 +15,13 @@ public static class SpotifyMappingExtensions
     {
         IReadOnlyList<Artist> artists = dto.Artists
             .Select(a => new Artist(id: a.Id, name: a.Name))
-            .ToList();
+            .ToList()
+            .AsReadOnly();
 
-        Album album = new Album(
-            id: dto.Album.Id,
-            name: dto.Album.Name,
-            imageUrl: dto.Album.GetAlbumImageUrl(),
-            releaseDate: dto.Album.ReleaseDate);
+        Album album = new(id: dto.Album.Id,
+                          name: dto.Album.Name,
+                          imageUrl: dto.Album.GetAlbumImageUrl(),
+                          releaseDate: dto.Album.ReleaseDate);
 
         ReccoBeatsAudioFeatures? features = null;
         audioFeatures?.TryGetValue(dto.Id, out features);
@@ -48,46 +48,27 @@ public static class SpotifyMappingExtensions
     /// <summary>
     /// Maps a collection of Spotify API track DTOs to Domain Track entities.
     /// </summary>
-    public static IReadOnlyList<Track> MapToDomain(this IEnumerable<SpotifyTrack> dtos, Dictionary<string, ReccoBeatsAudioFeatures>? audioFeatures = null)
-    {
-        return dtos.Select(d => d.MapToDomain(audioFeatures)).ToList();
-    }
+    public static IReadOnlyList<Track> MapToDomain(this IEnumerable<SpotifyTrack> dtos,
+                                                   Dictionary<string, ReccoBeatsAudioFeatures>? audioFeatures = null)
+        => dtos.Select(t => t.MapToDomain(audioFeatures))
+               .ToList()
+               .AsReadOnly();
 
     /// <summary>
     /// Maps a Spotify API playlist DTO to a Domain Playlist entity.
     /// </summary>
-    public static Playlist MapToDomain(this SpotifyPlaylist dto)
-    {
-        return new Playlist(
-            id: dto.Id,
-            name: dto.Name,
-            description: dto.Description,
-            imageUrl: dto.GetPlaylistImageUrl(),
-            trackCount: dto.Tracks.Total);
-    }
+    public static Playlist MapToDomain(this SpotifyPlaylist dto) => new(id: dto.Id,
+                                                                        name: dto.Name,
+                                                                        description: dto.Description,
+                                                                        imageUrl: dto.GetPlaylistImageUrl(),
+                                                                        trackCount: dto.Tracks.Total);
 
     /// <summary>
     /// Maps a collection of Spotify API playlist DTOs to Domain Playlist entities.
     /// </summary>
-    public static IReadOnlyList<Playlist> MapToDomain(this IEnumerable<SpotifyPlaylist> dtos)
-    {
-        return dtos.Select(MapToDomain).ToList();
-    }
+    public static IReadOnlyList<Playlist> MapToDomain(this IEnumerable<SpotifyPlaylist> dtos) => dtos.Select(MapToDomain)
+                                                                                                     .ToList()
+                                                                                                     .AsReadOnly();
 
-    /// <summary>
-    /// Maps a Domain Track entity back to a Spotify URI for API operations.
-    /// </summary>
-    public static string MapToSpotifyUri(this Track track)
-    {
-        return track.ToSpotifyUri();
-    }
-
-    /// <summary>
-    /// Maps a collection of Domain Track entities to Spotify URIs.
-    /// </summary>
-    public static IEnumerable<string> MapToSpotifyUris(this IEnumerable<Track> tracks)
-    {
-        return tracks.Select(MapToSpotifyUri);
-    }
 }
 
