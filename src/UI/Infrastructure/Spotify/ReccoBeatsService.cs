@@ -141,15 +141,15 @@ public sealed class ReccoBeatsService
 
                 response.EnsureSuccessStatusCode();
 
-                ReccoBeatsAudioFeaturesResponse? result = await response.Content.ReadFromJsonAsync<ReccoBeatsAudioFeaturesResponse>(cancellationToken);
+                ReccoBeatsAudioFeatures? result = await response.Content.ReadFromJsonAsync<ReccoBeatsAudioFeatures>(cancellationToken);
 
-                if (result?.Success == true && result.Data != null)
+                if (result != null)
                 {
                     _logger.LogDebug("Successfully fetched audio features for track {SpotifyTrackId}", spotifyTrackId);
-                    return result.Data;
+                    return result;
                 }
 
-                _logger.LogWarning("ReccoBeats API returned unsuccessful response for track {SpotifyTrackId}", spotifyTrackId);
+                _logger.LogWarning("ReccoBeats API returned null response for track {SpotifyTrackId}", spotifyTrackId);
                 return null;
             }
             catch (HttpRequestException ex)

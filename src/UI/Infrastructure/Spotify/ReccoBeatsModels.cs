@@ -27,19 +27,8 @@ public sealed class ReccoBeatsTrackInfo
 }
 
 /// <summary>
-/// Response wrapper for ReccoBeats audio features endpoint.
-/// </summary>
-public sealed class ReccoBeatsAudioFeaturesResponse
-{
-    [JsonPropertyName("success")]
-    public bool Success { get; init; }
-
-    [JsonPropertyName("data")]
-    public ReccoBeatsAudioFeatures? Data { get; init; }
-}
-
-/// <summary>
 /// Audio features data from ReccoBeats API.
+/// Returned directly from the /v1/track/:id/audio-features endpoint.
 /// </summary>
 public sealed class ReccoBeatsAudioFeatures
 {
