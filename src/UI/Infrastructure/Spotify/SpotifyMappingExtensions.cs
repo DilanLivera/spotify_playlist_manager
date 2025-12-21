@@ -10,7 +10,7 @@ public static class SpotifyMappingExtensions
     /// <summary>
     /// Maps a Spotify API track DTO to a Domain Track entity.
     /// </summary>
-    public static Track MapToDomain(this SpotifyTrack dto, Dictionary<string, SpotifyAudioFeatures>? audioFeatures = null)
+    public static Track MapToDomain(this SpotifyTrack dto, Dictionary<string, ReccoBeatsAudioFeatures>? audioFeatures = null)
     {
         IReadOnlyList<Artist> artists = dto.Artists
             .Select(a => new Artist(id: a.Id, name: a.Name))
@@ -22,7 +22,7 @@ public static class SpotifyMappingExtensions
             imageUrl: dto.Album.GetAlbumImageUrl(),
             releaseDate: dto.Album.ReleaseDate);
 
-        SpotifyAudioFeatures? features = null;
+        ReccoBeatsAudioFeatures? features = null;
         audioFeatures?.TryGetValue(dto.Id, out features);
 
         return new Track(
@@ -31,15 +31,23 @@ public static class SpotifyMappingExtensions
             artists: artists,
             album: album,
             genre: dto.Genre,
-            valence: features?.Valence ?? 0,
+            acousticness: features?.Acousticness ?? 0,
+            danceability: features?.Danceability ?? 0,
             energy: features?.Energy ?? 0,
-            danceability: features?.Danceability ?? 0);
+            instrumentalness: features?.Instrumentalness ?? 0,
+            key: features?.Key ?? 0,
+            liveness: features?.Liveness ?? 0,
+            loudness: features?.Loudness ?? 0,
+            mode: features?.Mode ?? 0,
+            speechiness: features?.Speechiness ?? 0,
+            tempo: features?.Tempo ?? 0,
+            valence: features?.Valence ?? 0);
     }
 
     /// <summary>
     /// Maps a collection of Spotify API track DTOs to Domain Track entities.
     /// </summary>
-    public static IReadOnlyList<Track> MapToDomain(this IEnumerable<SpotifyTrack> dtos, Dictionary<string, SpotifyAudioFeatures>? audioFeatures = null)
+    public static IReadOnlyList<Track> MapToDomain(this IEnumerable<SpotifyTrack> dtos, Dictionary<string, ReccoBeatsAudioFeatures>? audioFeatures = null)
     {
         return dtos.Select(d => d.MapToDomain(audioFeatures)).ToList();
     }

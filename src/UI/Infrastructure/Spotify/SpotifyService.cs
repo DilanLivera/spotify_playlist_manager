@@ -11,17 +11,20 @@ public sealed class SpotifyService
     private readonly ILogger<SpotifyService> _logger;
     private readonly SpotifyAuthSessionManager _spotifyAuthSessionManager;
     private readonly SpotifyAuthService _spotifyAuthService;
+    private readonly ReccoBeatsService _reccoBeatsService;
 
     public SpotifyService(
         HttpClient httpClient,
         ILogger<SpotifyService> logger,
         SpotifyAuthSessionManager spotifyAuthSessionManager,
-        SpotifyAuthService spotifyAuthService)
+        SpotifyAuthService spotifyAuthService,
+        ReccoBeatsService reccoBeatsService)
     {
         _httpClient = httpClient;
         _logger = logger;
         _spotifyAuthSessionManager = spotifyAuthSessionManager;
         _spotifyAuthService = spotifyAuthService;
+        _reccoBeatsService = reccoBeatsService;
 
         _httpClient.BaseAddress = new Uri("https://api.spotify.com/v1/");
         UpdateAuthorizationHeader();
@@ -94,9 +97,9 @@ public sealed class SpotifyService
                 // Bulk fetch genres for all unique artists
                 Dictionary<string, string> artistGenres = await GetArtistsGenresAsync(uniqueArtistIds, cancellationToken);
 
-                // Bulk fetch audio features for all tracks
+                // Fetch audio features from ReccoBeats for all tracks
                 string[] trackIds = dtoTracks.Select(t => t.Id).ToArray();
-                Dictionary<string, SpotifyAudioFeatures> audioFeatures = await GetAudioFeaturesAsync(trackIds, cancellationToken);
+                Dictionary<string, ReccoBeatsAudioFeatures> audioFeatures = await GetAudioFeaturesFromReccoBeatsAsync(trackIds, cancellationToken);
 
                 // Assign genres to tracks
                 foreach (SpotifyTrack track in dtoTracks)
@@ -329,65 +332,41 @@ public sealed class SpotifyService
         return newPlaylist;
     }
 
-    private async Task<Dictionary<string, SpotifyAudioFeatures>> GetAudioFeaturesAsync(string[] trackIds, CancellationToken cancellationToken)
+    private async Task<Dictionary<string, ReccoBeatsAudioFeatures>> GetAudioFeaturesFromReccoBeatsAsync(string[] trackIds, CancellationToken cancellationToken)
     {
-        Dictionary<string, SpotifyAudioFeatures> audioFeaturesMap = new();
+        Dictionary<string, ReccoBeatsAudioFeatures> audioFeaturesMap = new();
 
         if (trackIds.Length == 0)
         {
             return audioFeaturesMap;
         }
 
-        _logger.LogDebug("Fetching audio features for {TrackCount} tracks in bulk", trackIds.Length);
+        _logger.LogDebug("Fetching audio features for {TrackCount} tracks from ReccoBeats", trackIds.Length);
 
         try
         {
-            // Spotify allows up to 100 track IDs per request for audio features
-            const int batchSize = 100;
-            List<string[]> batches = trackIds
-                .Select((id, index) => new { id, index })
-                .GroupBy(x => x.index / batchSize)
-                .Select(g => g.Select(x => x.id).ToArray())
-                .ToList();
-
-            foreach (string[] batch in batches)
+            // ReccoBeats API requires individual requests per track (no bulk endpoint)
+            // Process tracks sequentially to respect rate limits
+            foreach (string trackId in trackIds)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                Func<Task<Dictionary<string, SpotifyAudioFeatures>>> apiCall = async () =>
-                {
-                    string ids = string.Join(",", batch);
-                    string requestUri = $"audio-features?ids={ids}";
-
-                    AudioFeaturesResponse response = await _httpClient.GetFromJsonAsync<AudioFeaturesResponse>(requestUri, cancellationToken)
-                        ?? throw new InvalidOperationException("Response can not be null");
-
-                    Dictionary<string, SpotifyAudioFeatures> batchFeatures = new();
-                    foreach (SpotifyAudioFeatures? features in response.AudioFeatures)
-                    {
-                        if (features != null)
-                        {
-                            batchFeatures[features.Id] = features;
-                        }
-                    }
-
-                    return batchFeatures;
-                };
-
-                Dictionary<string, SpotifyAudioFeatures> batchResult = await ExecuteWithTokenRefreshAsync(apiCall);
-                foreach ((string trackId, SpotifyAudioFeatures features) in batchResult)
+                ReccoBeatsAudioFeatures? features = await _reccoBeatsService.GetAudioFeaturesAsync(trackId, cancellationToken);
+                
+                if (features != null)
                 {
                     audioFeaturesMap[trackId] = features;
                 }
             }
 
-            _logger.LogInformation("Fetched audio features for {TrackCount} tracks", audioFeaturesMap.Count);
+            _logger.LogInformation("Fetched audio features for {SuccessCount}/{TotalCount} tracks from ReccoBeats", 
+                audioFeaturesMap.Count, trackIds.Length);
 
             return audioFeaturesMap;
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            _logger.LogWarning(ex, "Error getting audio features in bulk, returning partial results");
+            _logger.LogWarning(ex, "Error getting audio features from ReccoBeats, returning partial results");
             return audioFeaturesMap;
         }
     }

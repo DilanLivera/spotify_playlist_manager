@@ -10,9 +10,17 @@ public static class SpotifyExtensions
     /// </summary>
     /// <param name="services">The service collection.</param>
     /// <returns>The service collection for chaining.</returns>
-    public static IServiceCollection AddSpotifyServices(this IServiceCollection services) => services.AddScoped<SpotifyAuthService>()
-                                                                                                     .AddScoped<SpotifyService>()
-                                                                                                     .AddScoped<SpotifyAuthSessionManager>();
+    public static IServiceCollection AddSpotifyServices(this IServiceCollection services)
+    {
+        services.AddScoped<SpotifyAuthService>()
+                .AddScoped<SpotifyService>()
+                .AddScoped<SpotifyAuthSessionManager>();
+
+        // Register ReccoBeats service with its own HttpClient
+        services.AddHttpClient<ReccoBeatsService>();
+
+        return services;
+    }
 
     /// <summary>
     /// Configures Spotify endpoints in the application pipeline.
