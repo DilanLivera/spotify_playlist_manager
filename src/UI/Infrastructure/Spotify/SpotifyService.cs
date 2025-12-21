@@ -62,10 +62,6 @@ public sealed class SpotifyService
         }
     }
 
-    public async Task<IReadOnlyList<Track>> GetPlaylistTracksAsync(string playlistId) => await GetPlaylistTracksAsync(playlistId, offset: 0, limit: 100, CancellationToken.None);
-
-    public async Task<IReadOnlyList<Track>> GetPlaylistTracksAsync(string playlistId, int offset, int limit) => await GetPlaylistTracksAsync(playlistId, offset, limit, CancellationToken.None);
-
     public async Task<IReadOnlyList<Track>> GetPlaylistTracksAsync(string playlistId, int offset, int limit, CancellationToken cancellationToken)
     {
         using Activity? activity = ObservabilityExtensions.StartActivity("GetPlaylistTracks");
@@ -353,14 +349,14 @@ public sealed class SpotifyService
                 cancellationToken.ThrowIfCancellationRequested();
 
                 ReccoBeatsAudioFeatures? features = await _reccoBeatsService.GetAudioFeaturesAsync(trackId, cancellationToken);
-                
+
                 if (features != null)
                 {
                     audioFeaturesMap[trackId] = features;
                 }
             }
 
-            _logger.LogInformation("Fetched audio features for {SuccessCount}/{TotalCount} tracks from ReccoBeats", 
+            _logger.LogInformation("Fetched audio features for {SuccessCount}/{TotalCount} tracks from ReccoBeats",
                 audioFeaturesMap.Count, trackIds.Length);
 
             return audioFeaturesMap;
@@ -402,7 +398,7 @@ public sealed class SpotifyService
                     string ids = string.Join(",", batch);
                     string requestUri = $"artists?ids={ids}";
 
-                    ArtistsResponse response = await _httpClient.GetFromJsonAsync<ArtistsResponse>(requestUri, cancellationToken) 
+                    ArtistsResponse response = await _httpClient.GetFromJsonAsync<ArtistsResponse>(requestUri, cancellationToken)
                         ?? throw new InvalidOperationException("Response can not be null");
 
                     Dictionary<string, string> batchGenres = new();
@@ -432,31 +428,6 @@ public sealed class SpotifyService
         {
             _logger.LogWarning(ex, "Error getting artist genres in bulk, returning partial results");
             return artistGenres;
-        }
-    }
-
-    private async Task<string> GetArtistPrimaryGenreAsync(string artistId)
-    {
-        _logger.LogDebug("Fetching genre for artist {ArtistId}", artistId);
-
-        try
-        {
-            Func<Task<string>> apiCall = async () =>
-            {
-                SpotifyArtist artist = await _httpClient.GetFromJsonAsync<SpotifyArtist>(requestUri: $"artists/{artistId}") ?? throw new InvalidOperationException("Response can not be null");
-
-                return artist.Genres.FirstOrDefault() ?? "unknown";
-            };
-
-            return await ExecuteWithTokenRefreshAsync(apiCall);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex,
-                             "Error getting artist genre for artist {ArtistId}, defaulting to 'unknown'",
-                             artistId);
-
-            return "unknown";
         }
     }
 
