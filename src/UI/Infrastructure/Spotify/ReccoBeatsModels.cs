@@ -3,6 +3,30 @@ using System.Text.Json.Serialization;
 namespace UI.Infrastructure.Spotify;
 
 /// <summary>
+/// Response from ReccoBeats track lookup endpoint.
+/// </summary>
+public sealed class ReccoBeatsTrackLookupResponse
+{
+    [JsonPropertyName("content")]
+    public List<ReccoBeatsTrackInfo> Content { get; init; } = [];
+}
+
+/// <summary>
+/// Track information from ReccoBeats API.
+/// </summary>
+public sealed class ReccoBeatsTrackInfo
+{
+    [JsonPropertyName("id")]
+    public string Id { get; init; } = string.Empty;
+
+    [JsonPropertyName("trackTitle")]
+    public string TrackTitle { get; init; } = string.Empty;
+
+    [JsonPropertyName("href")]
+    public string Href { get; init; } = string.Empty;
+}
+
+/// <summary>
 /// Response wrapper for ReccoBeats audio features endpoint.
 /// </summary>
 public sealed class ReccoBeatsAudioFeaturesResponse
