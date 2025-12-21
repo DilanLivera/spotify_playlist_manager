@@ -11,16 +11,71 @@ public sealed class Track
     public IReadOnlyList<Artist> Artists { get; }
     public Album Album { get; }
     public string Genre { get; }
+    
+    /// <summary>
+    /// A confidence measure from 0.0 to 1.0 of whether the track is acoustic.
+    /// 1.0 represents high confidence the track is acoustic.
+    /// </summary>
     public float Acousticness { get; }
+    
+    /// <summary>
+    /// Describes how suitable a track is for dancing based on tempo, rhythm stability,
+    /// beat strength, and overall regularity. 0.0 is least danceable and 1.0 is most danceable.
+    /// </summary>
     public float Danceability { get; }
+    
+    /// <summary>
+    /// Represents a perceptual measure of intensity and activity from 0.0 to 1.0.
+    /// Energetic tracks feel fast, loud, and noisy.
+    /// </summary>
     public float Energy { get; }
+    
+    /// <summary>
+    /// Predicts whether a track contains no vocals from 0.0 to 1.0.
+    /// Values above 0.5 represent instrumental tracks.
+    /// </summary>
     public float Instrumentalness { get; }
+    
+    /// <summary>
+    /// The key the track is in. Integers map to pitches using standard Pitch Class notation.
+    /// E.g. 0 = C, 1 = C♯/D♭, 2 = D, and so on. If no key was detected, the value is -1.
+    /// </summary>
     public int Key { get; }
+    
+    /// <summary>
+    /// Detects the presence of an audience in the recording from 0.0 to 1.0.
+    /// Higher values represent increased probability the track was performed live.
+    /// </summary>
     public float Liveness { get; }
+    
+    /// <summary>
+    /// The overall loudness of a track in decibels (dB).
+    /// Values typically range between -60 and 0 dB.
+    /// </summary>
     public float Loudness { get; }
+    
+    /// <summary>
+    /// Indicates the modality (major or minor) of a track.
+    /// Major is represented by 1 and minor is 0.
+    /// </summary>
     public int Mode { get; }
+    
+    /// <summary>
+    /// Detects the presence of spoken words in a track from 0.0 to 1.0.
+    /// Values above 0.66 describe tracks that are probably made entirely of spoken words.
+    /// </summary>
     public float Speechiness { get; }
+    
+    /// <summary>
+    /// The overall estimated tempo of a track in beats per minute (BPM).
+    /// </summary>
     public float Tempo { get; }
+    
+    /// <summary>
+    /// A measure from 0.0 to 1.0 describing the musical positiveness conveyed by a track.
+    /// Tracks with high valence sound more positive (happy, cheerful, euphoric), while
+    /// tracks with low valence sound more negative (sad, depressed, angry).
+    /// </summary>
     public float Valence { get; }
 
     public Track(
