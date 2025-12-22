@@ -1,10 +1,12 @@
 @page "/playlist/{PlaylistId}"
 @using UI.Features.Shared.Domain
 @using UI.Infrastructure.Spotify
+@using UI.Infrastructure.AIAgent
 @inject SpotifyPlaylistService SpotifyPlaylistService
 @inject SpotifyTrackService SpotifyTrackService
 @inject SpotifyAuthSessionManager SpotifyAuthSessionManager
 @inject NavigationManager NavigationManager
+@inject AITrackFilterService AITrackFilterService
 @implements IDisposable
 @rendermode InteractiveServer
 
@@ -157,76 +159,109 @@
             </p>
         </div>
 
-        @* Copy to Playlist Section *@
+        @* AI-Powered Track Filtering Section *@
         <div class="mb-8 bg-[#232a3b] rounded-lg p-6 shadow-lg">
-            <h3 class="text-xl font-semibold text-white mb-4">Copy Tracks to Playlist</h3>
+            <h3 class="text-xl font-semibold text-white mb-4 flex items-center">
+                <svg class="w-6 h-6 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                </svg>
+                AI-Powered Track Filtering
+            </h3>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
-                @* Year Range Inputs *@
-                <div>
-                    <label class="block text-gray-400 text-sm mb-2" for="start-year-input">Start Year</label>
-                    <input type="number"
-                           id="start-year-input"
-                           @bind-value="_startYear"
-                           @bind-value:event="oninput"
-                           @onchange="OnYearRangeChanged"
-                           placeholder="e.g., 2000"
-                           class="w-full bg-[#1A1E2A] text-white border border-gray-600 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 focus:border-transparent placeholder-gray-500"/>
-                </div>
-                <div>
-                    <label class="block text-gray-400 text-sm mb-2" for="end-year-input">End Year (Optional)</label>
-                    <input type="number"
-                           id="end-year-input"
-                           @bind-value="_endYear"
-                           @bind-value:event="oninput"
-                           @onchange="OnYearRangeChanged"
-                           placeholder="Current Year"
-                           class="w-full bg-[#1A1E2A] text-white border border-gray-600 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 focus:border-transparent placeholder-gray-500"/>
-                </div>
-
-                @* Destination Playlist Name *@
-                <div>
-                    <label class="block text-gray-400 text-sm mb-2">Destination Playlist</label>
-                    <input type="text"
-                           @bind="_destinationPlaylistName"
-                           placeholder="Enter playlist name"
-                           class="w-full bg-[#1A1E2A] text-white border border-gray-600 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 focus:border-transparent placeholder-gray-500"/>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                @* AI Prompt Input *@
+                <div class="lg:col-span-2">
+                    <label class="block text-gray-400 text-sm mb-2" for="ai-prompt-input">
+                        Describe the tracks you want (e.g., "upbeat songs from the 2000s", "chill acoustic tracks")
+                    </label>
+                    <div class="flex gap-2">
+                        <input type="text"
+                               id="ai-prompt-input"
+                               @bind="_aiPrompt"
+                               @bind:event="oninput"
+                               @onkeydown="HandleAIPromptKeyDown"
+                               placeholder="Type your filtering criteria..."
+                               disabled="@(_isAIFiltering || _isLoading)"
+                               class="flex-1 bg-[#1A1E2A] text-white border border-gray-600 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 focus:border-transparent placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"/>
+                        <button type="button"
+                                @onclick="ApplyAIFilterAsync"
+                                disabled="@(_isAIFiltering || _isLoading || string.IsNullOrWhiteSpace(_aiPrompt))"
+                                class="text-white bg-gradient-to-r from-purple-600 to-indigo-500 hover:bg-gradient-to-l focus:ring-2 focus:ring-purple-400 font-medium rounded-lg text-sm px-6 py-2.5 text-center inline-flex items-center justify-center shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">
+                            @if (_isAIFiltering)
+                            {
+                                <div class="animate-spin rounded-full h-4 w-4 mr-2 border-t-2 border-b-2 border-white"></div>
+                                <span>Filtering...</span>
+                            }
+                            else
+                            {
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                </svg>
+                                <span>Filter</span>
+                            }
+                        </button>
+                    </div>
+                    @if (_isAIFiltering)
+                    {
+                        <div class="mt-2 text-sm text-gray-400 flex items-center">
+                            <svg class="animate-spin h-4 w-4 mr-2 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            AI is analyzing @_tracks.Count tracks... This may take a moment.
+                        </div>
+                    }
                 </div>
 
                 @* Matching Tracks Count *@
                 <div>
                     <label class="block text-gray-400 text-sm mb-2">Matching Tracks</label>
-                    <div class="bg-[#1A1E2A] text-white border border-gray-600 rounded-lg px-4 py-2.5">
-                        <span class="text-green-400 font-semibold">@GetMatchingTracksCount()</span>
-                        <span class="text-gray-400"> of @_tracks.Count</span>
+                    <div class="bg-[#1A1E2A] text-white border border-gray-600 rounded-lg px-4 py-2.5 h-[50px] flex items-center justify-center">
+                        <span class="text-green-400 font-semibold text-lg">@GetMatchingTracksCount()</span>
+                        <span class="text-gray-400 ml-2">of @_tracks.Count</span>
                     </div>
                 </div>
-
-                @* Copy Button *@
-                <div>
-                    <button type="button"
-                            @onclick="CopyTracksToPlaylistAsync"
-                            disabled="@(_isCopying || GetMatchingTracksCount() == 0 || string.IsNullOrWhiteSpace(_destinationPlaylistName))"
-                            class="w-full text-white bg-gradient-to-r from-green-600 to-emerald-500 hover:bg-gradient-to-l focus:ring-2 focus:ring-green-400 font-medium rounded-lg text-sm px-5 py-2.5 m-1 text-center inline-flex items-center justify-center shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
-                        @if (_isCopying)
-                        {
-                            <div class="animate-spin rounded-full h-4 w-4 mr-2 border-t-2 border-b-2 border-white"></div>
-                            <span>Copying...</span>
-                        }
-                        else
-                        {
-                            <svg class="w-4 h-4 mr-2"
-                                 fill="currentColor"
-                                 viewBox="0 0 20 20"
-                                 xmlns="http://www.w3.org/2000/svg">
-                                <path d="M8 2a1 1 0 000 2h2a1 1 0 100-2H8z"/>
-                                <path d="M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z"/>
-                            </svg>
-                            <span>Copy to Playlist</span>
-                        }
-                    </button>
-                </div>
             </div>
+
+            @* Destination Playlist and Copy Section *@
+            @if (_currentFilter != null && GetMatchingTracksCount() > 0)
+            {
+                <div class="mt-4 p-4 bg-[#1A1E2A] rounded-lg border border-gray-700">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                        <div>
+                            <label class="block text-gray-400 text-sm mb-2">Destination Playlist</label>
+                            <input type="text"
+                                   @bind="_destinationPlaylistName"
+                                   placeholder="Enter playlist name"
+                                   disabled="@_isCopying"
+                                   class="w-full bg-[#232a3b] text-white border border-gray-600 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 focus:border-transparent placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"/>
+                        </div>
+                        <div>
+                            <button type="button"
+                                    @onclick="CopyTracksToPlaylistAsync"
+                                    disabled="@(_isCopying || string.IsNullOrWhiteSpace(_destinationPlaylistName))"
+                                    class="w-full text-white bg-gradient-to-r from-green-600 to-emerald-500 hover:bg-gradient-to-l focus:ring-2 focus:ring-green-400 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center justify-center shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                                @if (_isCopying)
+                                {
+                                    <div class="animate-spin rounded-full h-4 w-4 mr-2 border-t-2 border-b-2 border-white"></div>
+                                    <span>Copying...</span>
+                                }
+                                else
+                                {
+                                    <svg class="w-4 h-4 mr-2"
+                                         fill="currentColor"
+                                         viewBox="0 0 20 20"
+                                         xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M8 2a1 1 0 000 2h2a1 1 0 100-2H8z"/>
+                                        <path d="M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z"/>
+                                    </svg>
+                                    <span>Copy to Playlist</span>
+                                }
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
 
             @* Status Message *@
             @if (!string.IsNullOrEmpty(_copyStatusMessage))
@@ -443,9 +478,10 @@
     private Playlist? _playlist;
     private CancellationTokenSource? _cancellationTokenSource;
 
-    // Custom Year Range Filter
-    private int? _startYear = 2000;
-    private int? _endYear = null; // Represents 'up to current year' if null
+    // AI Filter state
+    private string _aiPrompt = string.Empty;
+    private bool _isAIFiltering = false;
+    private ITrackFilter? _currentFilter = null;
 
     // Filter and copy-to-playlist state
     private string _destinationPlaylistName = string.Empty;
@@ -453,12 +489,9 @@
     private string _copyStatusMessage = string.Empty;
     private bool _copyStatusIsError = false;
 
-    private ITrackFilter SelectedFilter => new YearRangeFilter(minYear: _startYear ?? 1900, maxYear: _endYear ?? DateTime.Now.Year);
-
     protected override void OnInitialized()
     {
         _groupedTracks = new Dictionary<string, List<Track>>();
-        _destinationPlaylistName = SelectedFilter.SuggestedPlaylistName;
         _cancellationTokenSource = new CancellationTokenSource();
 
         if (!SpotifyAuthSessionManager.IsAuthenticated())
@@ -467,13 +500,58 @@
         }
     }
 
-    private void OnYearRangeChanged()
+    private async Task HandleAIPromptKeyDown(KeyboardEventArgs e)
     {
-        // This method is called when start or end year inputs change.
-        // The SelectedFilter computed property will automatically create a new YearRangeFilter.
-        _destinationPlaylistName = SelectedFilter.SuggestedPlaylistName;
-        _copyStatusMessage = string.Empty;
-        StateHasChanged();
+        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(_aiPrompt) && !_isAIFiltering && !_isLoading)
+        {
+            await ApplyAIFilterAsync();
+        }
+    }
+
+    private async Task ApplyAIFilterAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_aiPrompt) || _isAIFiltering || _isLoading)
+        {
+            return;
+        }
+
+        try
+        {
+            _isAIFiltering = true;
+            _copyStatusMessage = string.Empty;
+            _copyStatusIsError = false;
+            StateHasChanged();
+
+            // Create AI filter using the factory method
+            _currentFilter = await AITrackFilter.CreateAsync(
+                userPrompt: _aiPrompt,
+                tracks: _tracks,
+                aiService: AITrackFilterService,
+                cancellationToken: _cancellationTokenSource!.Token);
+
+            // Update destination playlist name with AI suggestion
+            _destinationPlaylistName = _currentFilter.SuggestedPlaylistName;
+
+            _copyStatusMessage = $"AI found {GetMatchingTracksCount()} matching tracks!";
+            _copyStatusIsError = false;
+        }
+        catch (HttpRequestException)
+        {
+            _copyStatusMessage = "Error: Could not connect to Ollama. Please ensure Ollama is running on your machine.";
+            _copyStatusIsError = true;
+            _currentFilter = null;
+        }
+        catch (Exception ex)
+        {
+            _copyStatusMessage = $"Error applying AI filter: {ex.Message}";
+            _copyStatusIsError = true;
+            _currentFilter = null;
+        }
+        finally
+        {
+            _isAIFiltering = false;
+            StateHasChanged();
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -629,9 +707,9 @@
         _ => "Unknown"
     };
 
-    private int GetMatchingTracksCount() => _tracks.Count(SelectedFilter.Matches);
+    private int GetMatchingTracksCount() => _currentFilter == null ? 0 : _tracks.Count(_currentFilter.Matches);
 
-    private List<Track> GetMatchingTracks() => _tracks.Where(SelectedFilter.Matches).ToList();
+    private List<Track> GetMatchingTracks() => _currentFilter == null ? [] : _tracks.Where(_currentFilter.Matches).ToList();
 
     private async Task CopyTracksToPlaylistAsync()
     {
@@ -658,7 +736,7 @@
 
             // Get or create the destination playlist
             Playlist destinationPlaylist = await SpotifyPlaylistService.GetOrCreatePlaylistAsync(name: _destinationPlaylistName.Trim(),
-                                                                                                 description: $"Tracks filtered by: {SelectedFilter.Name}");
+                                                                                                 description: $"Tracks filtered by: {_currentFilter?.Name ?? "AI Filter"}");
 
             // Convert track IDs to Spotify URIs
             IEnumerable<string> trackUris = matchingTracks.Select(t => t.ToSpotifyUri());
