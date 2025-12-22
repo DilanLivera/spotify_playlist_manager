@@ -22,6 +22,9 @@
         <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.11.0"/>
         <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.10.0"/>
         <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.10.0"/>
+        <!-- AI Agent Framework -->
+        <PackageReference Include="Microsoft.Agents.AI" Version="*-*"/>
+        <PackageReference Include="OllamaSharp" Version="3.0.11"/>
     </ItemGroup>
 
 </Project>
