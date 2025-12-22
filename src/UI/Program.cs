@@ -1,4 +1,5 @@
 using UI.App;
+using UI.Infrastructure.AIAgent;
 using UI.Infrastructure.Auth;
 using UI.Infrastructure.Observability;
 using UI.Infrastructure.ReccoBeats;
@@ -18,6 +19,8 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddHttpClient();
 
 builder.Services.AddSpotifyServices();
+
+builder.Services.AddAIAgentServices(builder.Configuration);
 
 builder.Services.AddHttpClient<ReccoBeatsService>();
 
