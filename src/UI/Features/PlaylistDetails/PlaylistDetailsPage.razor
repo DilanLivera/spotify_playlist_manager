@@ -58,9 +58,7 @@
 
         <TrackGroupList IsLoading="@_isLoading"
                         ShowCompactView="@(_sortingControls?.IsCompactView ?? false)"
-                        GroupedTracks="@_groupedTracks"
-                        CollapsedSections="@_collapsedSections"
-                        OnToggleSection="@ToggleSectionCollapse" />
+                        GroupedTracks="@_groupedTracks" />
     </div>
 </div>
 
@@ -76,7 +74,6 @@
     private const int BatchSize = 100;
     private bool _loadingMore = false;
     private bool _hasMoreTracks = true;
-    private readonly HashSet<string> _collapsedSections = [];
     private Playlist? _playlist;
     private CancellationTokenSource? _cancellationTokenSource;
     private TrackSortingControls? _sortingControls;
@@ -262,14 +259,6 @@
             _groupedTracks = _tracks.GroupBy(t => t.GetDecade())
                                     .OrderBy(g => g.Key)
                                     .ToDictionary(g => g.Key, g => g.ToList());
-        }
-    }
-
-    private void ToggleSectionCollapse(string key)
-    {
-        if (!_collapsedSections.Add(key))
-        {
-            _collapsedSections.Remove(key);
         }
     }
 

@@ -77,9 +77,9 @@
                         <h2 class="text-xl font-semibold text-white">
                             @key (@GroupedTracks[key].Count tracks)
                         </h2>
-                        <button @onclick="() => OnToggleSection.InvokeAsync(key)"
+                        <button @onclick="() => ToggleSectionCollapse(key)"
                                 class="text-gray-300 hover:text-white p-1 rounded-full hover:bg-gray-700/30 transition-colors">
-                            @if (CollapsedSections.Contains(key))
+                            @if (IsSectionCollapsed(key))
                             {
                                 <svg class="w-5 h-5"
                                      fill="currentColor"
@@ -104,7 +104,7 @@
                         </button>
                     </div>
                 </div>
-                @if (!CollapsedSections.Contains(key))
+                @if (!IsSectionCollapsed(key))
                 {
                     <div class="p-4">
                         <div class="overflow-x-auto">
@@ -182,6 +182,8 @@
 </div>
 
 @code {
+    private readonly HashSet<string> _collapsedSections = new();
+
     [Parameter]
     public bool IsLoading { get; set; }
 
@@ -191,11 +193,15 @@
     [Parameter]
     public Dictionary<string, List<Track>> GroupedTracks { get; set; } = new();
 
-    [Parameter]
-    public HashSet<string> CollapsedSections { get; set; } = new();
+    private void ToggleSectionCollapse(string key)
+    {
+        if (!_collapsedSections.Add(key))
+        {
+            _collapsedSections.Remove(key);
+        }
+    }
 
-    [Parameter]
-    public EventCallback<string> OnToggleSection { get; set; }
+    private bool IsSectionCollapsed(string key) => _collapsedSections.Contains(key);
 
     private string GetMoodClass(string mood) => mood switch
     {
