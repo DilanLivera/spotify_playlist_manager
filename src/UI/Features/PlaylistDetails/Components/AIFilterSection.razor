@@ -1,0 +1,164 @@
+@using UI.Features.Shared.Domain
+
+<div class="mb-8 bg-[#232a3b] rounded-lg p-6 shadow-lg">
+    <h3 class="text-xl font-semibold text-white mb-4 flex items-center">
+        <svg class="w-6 h-6 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+        </svg>
+        AI-Powered Track Filtering
+    </h3>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        @* AI Prompt Input *@
+        <div class="lg:col-span-2">
+            <label class="block text-gray-400 text-sm mb-2" for="ai-prompt-input">
+                Describe the tracks you want (e.g., "upbeat songs from the 2000s", "chill acoustic tracks")
+            </label>
+            <div class="flex gap-2">
+                <input type="text"
+                       id="ai-prompt-input"
+                       value="@AIPrompt"
+                       @oninput="@(e => AIPrompt = e.Value?.ToString() ?? string.Empty)"
+                       @onkeydown="HandleAIPromptKeyDown"
+                       placeholder="Type your filtering criteria..."
+                       disabled="@(IsAIFiltering || IsLoading)"
+                       class="flex-1 bg-[#1A1E2A] text-white border border-gray-600 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 focus:border-transparent placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"/>
+                <button type="button"
+                        @onclick="OnApplyFilter"
+                        disabled="@(IsAIFiltering || IsLoading || string.IsNullOrWhiteSpace(AIPrompt))"
+                        class="text-white bg-gradient-to-r from-purple-600 to-indigo-500 hover:bg-gradient-to-l focus:ring-2 focus:ring-purple-400 font-medium rounded-lg text-sm px-6 py-2.5 text-center inline-flex items-center justify-center shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">
+                    @if (IsAIFiltering)
+                    {
+                        <div class="animate-spin rounded-full h-4 w-4 mr-2 border-t-2 border-b-2 border-white"></div>
+                        <span>Filtering...</span>
+                    }
+                    else
+                    {
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                        <span>Filter</span>
+                    }
+                </button>
+            </div>
+            @if (IsAIFiltering)
+            {
+                <div class="mt-2 text-sm text-gray-400 flex items-center">
+                    <svg class="animate-spin h-4 w-4 mr-2 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    AI is analyzing @TotalTrackCount tracks... This may take a moment.
+                </div>
+            }
+        </div>
+
+        @* Matching Tracks Count *@
+        <div>
+            <label class="block text-gray-400 text-sm mb-2">Matching Tracks</label>
+            <div class="bg-[#1A1E2A] text-white border border-gray-600 rounded-lg px-4 py-2.5 h-[50px] flex items-center justify-center">
+                <span class="text-green-400 font-semibold text-lg">@MatchingTracksCount</span>
+                <span class="text-gray-400 ml-2">of @TotalTrackCount</span>
+            </div>
+        </div>
+    </div>
+
+    @* Destination Playlist and Copy Section *@
+    @if (HasActiveFilter && MatchingTracksCount > 0)
+    {
+        <div class="mt-4 p-4 bg-[#1A1E2A] rounded-lg border border-gray-700">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                <div>
+                    <label class="block text-gray-400 text-sm mb-2">Destination Playlist</label>
+                    <input type="text"
+                           value="@DestinationPlaylistName"
+                           @oninput="@(e => DestinationPlaylistName = e.Value?.ToString() ?? string.Empty)"
+                           placeholder="Enter playlist name"
+                           disabled="@IsCopying"
+                           class="w-full bg-[#232a3b] text-white border border-gray-600 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 focus:border-transparent placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"/>
+                </div>
+                <div>
+                    <button type="button"
+                            @onclick="OnCopyTracks"
+                            disabled="@(IsCopying || string.IsNullOrWhiteSpace(DestinationPlaylistName))"
+                            class="w-full text-white bg-gradient-to-r from-green-600 to-emerald-500 hover:bg-gradient-to-l focus:ring-2 focus:ring-green-400 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center justify-center shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                        @if (IsCopying)
+                        {
+                            <div class="animate-spin rounded-full h-4 w-4 mr-2 border-t-2 border-b-2 border-white"></div>
+                            <span>Copying...</span>
+                        }
+                        else
+                        {
+                            <svg class="w-4 h-4 mr-2"
+                                 fill="currentColor"
+                                 viewBox="0 0 20 20"
+                                 xmlns="http://www.w3.org/2000/svg">
+                                <path d="M8 2a1 1 0 000 2h2a1 1 0 100-2H8z"/>
+                                <path d="M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z"/>
+                            </svg>
+                            <span>Copy to Playlist</span>
+                        }
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+
+    @* Status Message *@
+    @if (!string.IsNullOrEmpty(StatusMessage))
+    {
+        <div class="mt-4 p-3 rounded-lg @(StatusIsError ? "bg-red-900/50 text-red-300" : "bg-green-900/50 text-green-300")">
+            @StatusMessage
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string AIPrompt { get; set; } = string.Empty;
+
+    [Parameter]
+    public bool IsAIFiltering { get; set; }
+
+    [Parameter]
+    public bool IsLoading { get; set; }
+
+    [Parameter]
+    public int TotalTrackCount { get; set; }
+
+    [Parameter]
+    public int MatchingTracksCount { get; set; }
+
+    [Parameter]
+    public bool HasActiveFilter { get; set; }
+
+    [Parameter]
+    public string DestinationPlaylistName { get; set; } = string.Empty;
+
+    [Parameter]
+    public bool IsCopying { get; set; }
+
+    [Parameter]
+    public string StatusMessage { get; set; } = string.Empty;
+
+    [Parameter]
+    public bool StatusIsError { get; set; }
+
+    [Parameter]
+    public EventCallback OnApplyFilter { get; set; }
+
+    [Parameter]
+    public EventCallback OnCopyTracks { get; set; }
+
+    [Parameter]
+    public EventCallback<KeyboardEventArgs> OnAIPromptKeyDown { get; set; }
+
+    private async Task HandleAIPromptKeyDown(KeyboardEventArgs e)
+    {
+        if (OnAIPromptKeyDown.HasDelegate)
+        {
+            await OnAIPromptKeyDown.InvokeAsync(e);
+        }
+    }
+}
+
