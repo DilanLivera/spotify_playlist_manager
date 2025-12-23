@@ -275,23 +275,6 @@
         }
     }
 
-    private string GetMusicalKey(int key) => key switch
-    {
-        0 => "C",
-        1 => "C♯/D♭",
-        2 => "D",
-        3 => "D♯/E♭",
-        4 => "E",
-        5 => "F",
-        6 => "F♯/G♭",
-        7 => "G",
-        8 => "G♯/A♭",
-        9 => "A",
-        10 => "A♯/B♭",
-        11 => "B",
-        _ => "Unknown"
-    };
-
     private int GetMatchingTracksCount() => _currentFilter == null ? 0 : _tracks.Count(_currentFilter.Matches);
 
     private List<Track> GetMatchingTracks() => _currentFilter == null ? [] : _tracks.Where(_currentFilter.Matches).ToList();
