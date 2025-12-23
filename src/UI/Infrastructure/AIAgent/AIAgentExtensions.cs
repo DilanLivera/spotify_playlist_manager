@@ -16,33 +16,26 @@ public static class AIAgentExtensions
     /// <returns>The service collection for chaining.</returns>
     public static IServiceCollection AddAIAgentServices(this IServiceCollection services, IConfiguration configuration)
     {
-        // Get configuration values
-        string ollamaEndpoint = configuration["AIAgent:OllamaEndpoint"] ?? "http://localhost:11434";
-        string modelName = configuration["AIAgent:ModelName"] ?? "llama3";
+        string ollamaEndpoint = configuration["AIAgent:OllamaEndpoint"] ?? throw new Exception("'AIAgent:OllamaEndpoint' configuration value is missing");
+        string modelName = configuration["AIAgent:ModelName"] ?? throw new Exception("'AIAgent:ModelName' configuration value is missing");
 
-        // Register OllamaApiClient as a singleton
         services.AddSingleton<OllamaApiClient>(serviceProvider =>
         {
             ILogger<OllamaApiClient> logger = serviceProvider.GetRequiredService<ILogger<OllamaApiClient>>();
-            
-            try
-            {
-                OllamaApiClient client = new OllamaApiClient(new Uri(ollamaEndpoint), modelName);
-                logger.LogInformation("Configured Ollama client with endpoint: {Endpoint}, model: {Model}",
-                                      ollamaEndpoint,
-                                      modelName);
+            IHttpClientFactory clientFactory = serviceProvider.GetRequiredService<IHttpClientFactory>();
+            HttpClient httpClient = clientFactory.CreateClient(nameof(OllamaApiClient));
+            httpClient.BaseAddress = new Uri(ollamaEndpoint);
+            httpClient.Timeout = TimeSpan.FromMinutes(30);
 
-                return client;
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Failed to create Ollama client. Ensure Ollama is running at {Endpoint}", ollamaEndpoint);
+            OllamaApiClient client = new(httpClient, defaultModel: modelName);
 
-                throw;
-            }
+            logger.LogInformation("Configured Ollama client with endpoint: {Endpoint}, model: {Model}",
+                                  ollamaEndpoint,
+                                  modelName);
+
+            return client;
         });
 
-        // Register the AITrackFilterService
         services.AddScoped<AITrackFilterService>();
 
         return services;
