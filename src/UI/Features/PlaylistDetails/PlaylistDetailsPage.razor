@@ -34,93 +34,14 @@
 
         <PlaylistHeader Playlist="_playlist" />
 
-        <div class="mb-8">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <h1 class="text-3xl font-bold text-white">
-                    @if (_sortingBy == SortingOption.Genre)
-                    {
-                        <span>Sorted by Genre</span>
-                    }
-                    else
-                    {
-                        <span>Sorted by Decade</span>
-                    }
-                </h1>
-                <div class="flex gap-3">
-                    <div class="bg-[#1A1E2A] p-1 rounded-full shadow-lg">
-                        <button type="button"
-                                @onclick="() => SetSortingOption(SortingOption.Genre)"
-                                class="@GetSortingButtonClass(SortingOption.Genre)">
-                            <svg class="w-4 h-4 mr-1 inline"
-                                 fill="currentColor"
-                                 viewBox="0 0 20 20"
-                                 xmlns="http://www.w3.org/2000/svg">
-                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                            </svg>
-                            <span>Genre</span>
-                        </button>
-                        <button type="button"
-                                @onclick="() => SetSortingOption(SortingOption.Decade)"
-                                class="@GetSortingButtonClass(SortingOption.Decade)">
-                            <svg class="w-4 h-4 mr-1 inline"
-                                 fill="currentColor"
-                                 viewBox="0 0 20 20"
-                                 xmlns="http://www.w3.org/2000/svg">
-                                <path fill-rule="evenodd"
-                                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
-                                      clip-rule="evenodd"/>
-                            </svg>
-                            <span>Decade</span>
-                        </button>
-                    </div>
-                    <button type="button"
-                            @onclick="ToggleView"
-                            class="text-white bg-gradient-to-r from-green-600 to-emerald-500 hover:bg-gradient-to-l focus:ring-2 focus:ring-green-400 font-medium rounded-full text-sm px-5 py-2.5 text-center inline-flex items-center shadow-lg transition-all duration-200">
-                        @if (_showCompactView)
-                        {
-                            <svg class="w-4 h-4 mr-1"
-                                 fill="currentColor"
-                                 viewBox="0 0 20 20"
-                                 xmlns="http://www.w3.org/2000/svg">
-                                <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"></path>
-                                <path fill-rule="evenodd"
-                                      d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
-                                      clip-rule="evenodd"/>
-                            </svg>
-                            <span>Details</span>
-                        }
-                        else
-                        {
-                            <svg class="w-4 h-4 mr-1"
-                                 fill="currentColor"
-                                 viewBox="0 0 20 20"
-                                 xmlns="http://www.w3.org/2000/svg">
-                                <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
-                                <path fill-rule="evenodd"
-                                      d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z"
-                                      clip-rule="evenodd"/>
-                            </svg>
-                            <span>Compact</span>
-                        }
-                    </button>
-                </div>
-            </div>
-            <p class="text-gray-400 mt-2">
-                @if (_isLoading)
-                {
-                <div class="flex items-center justify-between flex-wrap gap-2">
-                        <span class="flex items-center">
-                            <div class="animate-spin rounded-full h-4 w-4 mr-2 border-t-2 border-b-2 border-green-500"></div>
-                            Loading tracks... (@_tracks.Count of @(_playlist?.TrackCount ?? 0) loaded, @((_playlist?.TrackCount ?? 0) - _tracks.Count) remaining)
-                        </span>
-                </div>
-            }
-            else
-            {
-                <span>All @_tracks.Count tracks loaded in @_groupedTracks.Count @(_sortingBy == SortingOption.Genre ? "genres" : "decades")</span>
-            }
-            </p>
-        </div>
+        <TrackSortingControls SortingBy="_sortingBy"
+                              ShowCompactView="_showCompactView"
+                              IsLoading="_isLoading"
+                              LoadedCount="_tracks.Count"
+                              TotalCount="@(_playlist?.TrackCount ?? 0)"
+                              GroupCount="_groupedTracks.Count"
+                              OnSortingChanged="SetSortingOption"
+                              OnViewToggle="ToggleView" />
 
         @* AI-Powered Track Filtering Section *@
         <div class="mb-8 bg-[#232a3b] rounded-lg p-6 shadow-lg">
@@ -616,15 +537,6 @@
                                     .OrderBy(g => g.Key)
                                     .ToDictionary(g => g.Key, g => g.ToList());
         }
-    }
-
-    private string GetSortingButtonClass(SortingOption option)
-    {
-        const string baseClass = "px-4 py-2 text-sm font-medium transition-all duration-200";
-        const string activeClass = "bg-green-600 text-white rounded-full shadow-inner";
-        const string inactiveClass = "bg-transparent text-gray-300 hover:text-white";
-
-        return $"{baseClass} {(_sortingBy == option ? activeClass : inactiveClass)}";
     }
 
     private void ToggleView() => _showCompactView = !_showCompactView;
