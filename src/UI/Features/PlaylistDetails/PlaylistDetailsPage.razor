@@ -32,36 +32,35 @@
             </a>
         </div>
 
-        <PlaylistHeader Playlist="_playlist" />
+        <PlaylistHeader Playlist="@_playlist" />
 
-        <TrackSortingControls SortingBy="_sortingBy"
-                              ShowCompactView="_showCompactView"
-                              IsLoading="_isLoading"
-                              LoadedCount="_tracks.Count"
+        <TrackSortingControls @ref="_sortingControls"
+                              IsLoading="@_isLoading"
+                              LoadedCount="@_tracks.Count"
                               TotalCount="@(_playlist?.TrackCount ?? 0)"
-                              GroupCount="_groupedTracks.Count"
-                              OnSortingChanged="SetSortingOption"
-                              OnViewToggle="ToggleView" />
+                              GroupCount="@_groupedTracks.Count"
+                              OnSortingChanged="HandleSortingChanged"
+                              OnViewChanged="HandleViewChanged" />
 
-        <AIFilterSection AIPrompt="_aiPrompt"
-                         DestinationPlaylistName="_destinationPlaylistName"
-                         IsAIFiltering="_isAIFiltering"
-                         IsLoading="_isLoading"
-                         TotalTrackCount="_tracks.Count"
-                         MatchingTracksCount="GetMatchingTracksCount()"
+        <AIFilterSection AIPrompt="@_aiPrompt"
+                         DestinationPlaylistName="@_destinationPlaylistName"
+                         IsAIFiltering="@_isAIFiltering"
+                         IsLoading="@_isLoading"
+                         TotalTrackCount="@_tracks.Count"
+                         MatchingTracksCount="@GetMatchingTracksCount()"
                          HasActiveFilter="@(_currentFilter != null)"
-                         IsCopying="_isCopying"
-                         StatusMessage="_copyStatusMessage"
-                         StatusIsError="_copyStatusIsError"
-                         OnApplyFilter="ApplyAIFilterAsync"
-                         OnCopyTracks="CopyTracksToPlaylistAsync"
-                         OnAIPromptKeyDown="HandleAIPromptKeyDown" />
+                         IsCopying="@_isCopying"
+                         StatusMessage="@_copyStatusMessage"
+                         StatusIsError="@_copyStatusIsError"
+                         OnApplyFilter="@ApplyAIFilterAsync"
+                         OnCopyTracks="@CopyTracksToPlaylistAsync"
+                         OnAIPromptKeyDown="@HandleAIPromptKeyDown" />
 
-        <TrackGroupList IsLoading="_isLoading"
-                        ShowCompactView="_showCompactView"
-                        GroupedTracks="_groupedTracks"
-                        CollapsedSections="_collapsedSections"
-                        OnToggleSection="ToggleSectionCollapse" />
+        <TrackGroupList IsLoading="@_isLoading"
+                        ShowCompactView="@(_sortingControls?.IsCompactView ?? false)"
+                        GroupedTracks="@_groupedTracks"
+                        CollapsedSections="@_collapsedSections"
+                        OnToggleSection="@ToggleSectionCollapse" />
     </div>
 </div>
 
@@ -73,8 +72,6 @@
     private readonly List<Track> _tracks = [];
     private Dictionary<string, List<Track>> _groupedTracks = [];
     private bool _isLoading = true;
-    private bool _showCompactView = false;
-    private SortingOption _sortingBy = SortingOption.Genre;
     private int _offset = 0;
     private const int BatchSize = 100;
     private bool _loadingMore = false;
@@ -82,6 +79,7 @@
     private readonly HashSet<string> _collapsedSections = [];
     private Playlist? _playlist;
     private CancellationTokenSource? _cancellationTokenSource;
+    private TrackSortingControls? _sortingControls;
 
     // AI Filter state
     private string _aiPrompt = string.Empty;
@@ -227,7 +225,7 @@
 
                 _hasMoreTracks = newTracks.Count == BatchSize;
 
-                GroupTracks();
+                GroupTracks(_sortingControls?.CurrentSorting ?? SortingOption.Genre);
             }
             else
             {
@@ -241,18 +239,20 @@
         }
     }
 
-    private void SetSortingOption(SortingOption option)
+    private void HandleSortingChanged(SortingOption option)
     {
-        if (_sortingBy != option)
-        {
-            _sortingBy = option;
-            GroupTracks();
-        }
+        GroupTracks(option);
     }
 
-    private void GroupTracks()
+    private void HandleViewChanged(bool isCompact)
     {
-        if (_sortingBy == SortingOption.Genre)
+        // View state is now managed by TrackSortingControls
+        StateHasChanged();
+    }
+
+    private void GroupTracks(SortingOption sortingBy)
+    {
+        if (sortingBy == SortingOption.Genre)
         {
             _groupedTracks = _tracks.GroupBy(t => t.Genre)
                                     .ToDictionary(g => g.Key, g => g.ToList());
@@ -264,8 +264,6 @@
                                     .ToDictionary(g => g.Key, g => g.ToList());
         }
     }
-
-    private void ToggleView() => _showCompactView = !_showCompactView;
 
     private void ToggleSectionCollapse(string key)
     {

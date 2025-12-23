@@ -3,7 +3,7 @@
 <div class="mb-8">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 class="text-3xl font-bold text-white">
-            @if (SortingBy == SortingOption.Genre)
+            @if (_sortingBy == SortingOption.Genre)
             {
                 <span>Sorted by Genre</span>
             }
@@ -15,7 +15,7 @@
         <div class="flex gap-3">
             <div class="bg-[#1A1E2A] p-1 rounded-full shadow-lg">
                 <button type="button"
-                        @onclick="() => OnSortingChanged.InvokeAsync(SortingOption.Genre)"
+                        @onclick="() => SetSorting(SortingOption.Genre)"
                         class="@GetSortingButtonClass(SortingOption.Genre)">
                     <svg class="w-4 h-4 mr-1 inline"
                          fill="currentColor"
@@ -26,7 +26,7 @@
                     <span>Genre</span>
                 </button>
                 <button type="button"
-                        @onclick="() => OnSortingChanged.InvokeAsync(SortingOption.Decade)"
+                        @onclick="() => SetSorting(SortingOption.Decade)"
                         class="@GetSortingButtonClass(SortingOption.Decade)">
                     <svg class="w-4 h-4 mr-1 inline"
                          fill="currentColor"
@@ -40,9 +40,9 @@
                 </button>
             </div>
             <button type="button"
-                    @onclick="OnViewToggle"
+                    @onclick="ToggleView"
                     class="text-white bg-gradient-to-r from-green-600 to-emerald-500 hover:bg-gradient-to-l focus:ring-2 focus:ring-green-400 font-medium rounded-full text-sm px-5 py-2.5 text-center inline-flex items-center shadow-lg transition-all duration-200">
-                @if (ShowCompactView)
+                @if (_showCompactView)
                 {
                     <svg class="w-4 h-4 mr-1"
                          fill="currentColor"
@@ -83,17 +83,14 @@
         }
         else
         {
-            <span>All @LoadedCount tracks loaded in @GroupCount @(SortingBy == SortingOption.Genre ? "genres" : "decades")</span>
+            <span>All @LoadedCount tracks loaded in @GroupCount @(_sortingBy == SortingOption.Genre ? "genres" : "decades")</span>
         }
     </p>
 </div>
 
 @code {
-    [Parameter]
-    public SortingOption SortingBy { get; set; }
-
-    [Parameter]
-    public bool ShowCompactView { get; set; }
+    private SortingOption _sortingBy = SortingOption.Genre;
+    private bool _showCompactView = false;
 
     [Parameter]
     public bool IsLoading { get; set; }
@@ -111,7 +108,25 @@
     public EventCallback<SortingOption> OnSortingChanged { get; set; }
 
     [Parameter]
-    public EventCallback OnViewToggle { get; set; }
+    public EventCallback<bool> OnViewChanged { get; set; }
+
+    public SortingOption CurrentSorting => _sortingBy;
+    public bool IsCompactView => _showCompactView;
+
+    private async Task SetSorting(SortingOption option)
+    {
+        if (_sortingBy != option)
+        {
+            _sortingBy = option;
+            await OnSortingChanged.InvokeAsync(_sortingBy);
+        }
+    }
+
+    private async Task ToggleView()
+    {
+        _showCompactView = !_showCompactView;
+        await OnViewChanged.InvokeAsync(_showCompactView);
+    }
 
     private string GetSortingButtonClass(SortingOption option)
     {
@@ -119,7 +134,7 @@
         const string activeClass = "bg-green-600 text-white rounded-full shadow-inner";
         const string inactiveClass = "bg-transparent text-gray-300 hover:text-white";
 
-        return $"{baseClass} {(SortingBy == option ? activeClass : inactiveClass)}";
+        return $"{baseClass} {(_sortingBy == option ? activeClass : inactiveClass)}";
     }
 }
 
