@@ -1,0 +1,47 @@
+@using UI.Features.Shared.Domain
+
+@if (Playlist != null)
+{
+    <div class="mb-8">
+        <div class="flex items-start gap-6">
+            @if (!string.IsNullOrEmpty(Playlist.ImageUrl))
+            {
+                <img src="@Playlist.ImageUrl"
+                     alt="@Playlist.Name"
+                     class="w-24 h-24 object-cover rounded-lg shadow-lg"/>
+            }
+            else
+            {
+                <div class="w-24 h-24 bg-gray-800 rounded-lg shadow-lg flex items-center justify-center">
+                    <svg class="w-10 h-10 text-gray-600"
+                         fill="currentColor"
+                         viewBox="0 0 20 20"
+                         xmlns="http://www.w3.org/2000/svg">
+                        <path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.82l8-1.6v5.894A4.37 4.37 0 0015 12c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z"/>
+                    </svg>
+                </div>
+            }
+            <div>
+                <h1 class="text-3xl font-bold text-white mb-2">@Playlist.Name</h1>
+                <p class="text-gray-400 mb-4">
+                    @(!string.IsNullOrEmpty(Playlist.Description) ? Playlist.Description : "No description")
+                </p>
+                <div class="flex items-center text-gray-500 text-sm">
+                    <svg class="w-4 h-4 mr-1"
+                         fill="currentColor"
+                         viewBox="0 0 20 20"
+                         xmlns="http://www.w3.org/2000/svg">
+                        <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z"/>
+                    </svg>
+                    @Playlist.TrackCount tracks
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public Playlist? Playlist { get; set; }
+}
+
