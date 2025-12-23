@@ -2,12 +2,10 @@
 @using UI.Features.Shared.Domain
 @using UI.Features.PlaylistDetails.Components
 @using UI.Infrastructure.Spotify
-@using UI.Infrastructure.AIAgent
 @inject SpotifyPlaylistService SpotifyPlaylistService
 @inject SpotifyTrackService SpotifyTrackService
 @inject SpotifyAuthSessionManager SpotifyAuthSessionManager
 @inject NavigationManager NavigationManager
-@inject AITrackFilterService AITrackFilterService
 @implements IDisposable
 @rendermode InteractiveServer
 
@@ -42,19 +40,10 @@
                               OnSortingChanged="HandleSortingChanged"
                               OnViewChanged="HandleViewChanged" />
 
-        <AIFilterSection AIPrompt="@_aiPrompt"
-                         DestinationPlaylistName="@_destinationPlaylistName"
-                         IsAIFiltering="@_isAIFiltering"
-                         IsLoading="@_isLoading"
+        <AIFilterSection IsLoading="@_isLoading"
                          TotalTrackCount="@_tracks.Count"
-                         MatchingTracksCount="@GetMatchingTracksCount()"
-                         HasActiveFilter="@(_currentFilter != null)"
-                         IsCopying="@_isCopying"
-                         StatusMessage="@_copyStatusMessage"
-                         StatusIsError="@_copyStatusIsError"
-                         OnApplyFilter="@ApplyAIFilterAsync"
-                         OnCopyTracks="@CopyTracksToPlaylistAsync"
-                         OnAIPromptKeyDown="@HandleAIPromptKeyDown" />
+                         Tracks="@_tracks"
+                         CancellationToken="@(_cancellationTokenSource?.Token ?? CancellationToken.None)" />
 
         <TrackGroupList IsLoading="@_isLoading"
                         ShowCompactView="@(_sortingControls?.IsCompactView ?? false)"
@@ -78,17 +67,6 @@
     private CancellationTokenSource? _cancellationTokenSource;
     private TrackSortingControls? _sortingControls;
 
-    // AI Filter state
-    private string _aiPrompt = string.Empty;
-    private bool _isAIFiltering = false;
-    private ITrackFilter? _currentFilter = null;
-
-    // Filter and copy-to-playlist state
-    private string _destinationPlaylistName = string.Empty;
-    private bool _isCopying = false;
-    private string _copyStatusMessage = string.Empty;
-    private bool _copyStatusIsError = false;
-
     protected override void OnInitialized()
     {
         _groupedTracks = new Dictionary<string, List<Track>>();
@@ -97,60 +75,6 @@
         if (!SpotifyAuthSessionManager.IsAuthenticated())
         {
             NavigationManager.NavigateTo(uri: "/spotify-auth");
-        }
-    }
-
-    private async Task HandleAIPromptKeyDown(KeyboardEventArgs e)
-    {
-        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(_aiPrompt) && !_isAIFiltering && !_isLoading)
-        {
-            await ApplyAIFilterAsync();
-        }
-    }
-
-    private async Task ApplyAIFilterAsync()
-    {
-        if (string.IsNullOrWhiteSpace(_aiPrompt) || _isAIFiltering || _isLoading)
-        {
-            return;
-        }
-
-        try
-        {
-            _isAIFiltering = true;
-            _copyStatusMessage = string.Empty;
-            _copyStatusIsError = false;
-            StateHasChanged();
-
-            // Create AI filter using the factory method
-            _currentFilter = await AITrackFilter.CreateAsync(
-                userPrompt: _aiPrompt,
-                tracks: _tracks,
-                aiService: AITrackFilterService,
-                cancellationToken: _cancellationTokenSource!.Token);
-
-            // Update destination playlist name with AI suggestion
-            _destinationPlaylistName = _currentFilter.SuggestedPlaylistName;
-
-            _copyStatusMessage = $"AI found {GetMatchingTracksCount()} matching tracks!";
-            _copyStatusIsError = false;
-        }
-        catch (HttpRequestException)
-        {
-            _copyStatusMessage = "Error: Could not connect to Ollama. Please ensure Ollama is running on your machine.";
-            _copyStatusIsError = true;
-            _currentFilter = null;
-        }
-        catch (Exception ex)
-        {
-            _copyStatusMessage = $"Error applying AI filter: {ex.Message}";
-            _copyStatusIsError = true;
-            _currentFilter = null;
-        }
-        finally
-        {
-            _isAIFiltering = false;
-            StateHasChanged();
         }
     }
 
@@ -259,58 +183,6 @@
             _groupedTracks = _tracks.GroupBy(t => t.GetDecade())
                                     .OrderBy(g => g.Key)
                                     .ToDictionary(g => g.Key, g => g.ToList());
-        }
-    }
-
-    private int GetMatchingTracksCount() => _currentFilter == null ? 0 : _tracks.Count(_currentFilter.Matches);
-
-    private List<Track> GetMatchingTracks() => _currentFilter == null ? [] : _tracks.Where(_currentFilter.Matches).ToList();
-
-    private async Task CopyTracksToPlaylistAsync()
-    {
-        if (_isCopying || string.IsNullOrWhiteSpace(_destinationPlaylistName))
-        {
-            return;
-        }
-
-        List<Track> matchingTracks = GetMatchingTracks();
-
-        if (matchingTracks.Count == 0)
-        {
-            _copyStatusMessage = "No tracks match the selected filter.";
-            _copyStatusIsError = true;
-
-            return;
-        }
-
-        try
-        {
-            _isCopying = true;
-            _copyStatusMessage = string.Empty;
-            StateHasChanged();
-
-            // Get or create the destination playlist
-            Playlist destinationPlaylist = await SpotifyPlaylistService.GetOrCreatePlaylistAsync(name: _destinationPlaylistName.Trim(),
-                                                                                                 description: $"Tracks filtered by: {_currentFilter?.Name ?? "AI Filter"}");
-
-            // Convert track IDs to Spotify URIs
-            IEnumerable<string> trackUris = matchingTracks.Select(t => t.ToSpotifyUri());
-
-            // Add tracks to playlist
-            await SpotifyPlaylistService.AddTracksToPlaylistAsync(destinationPlaylist.Id, trackUris);
-
-            _copyStatusMessage = $"Successfully copied {matchingTracks.Count} tracks to '{destinationPlaylist.Name}'.";
-            _copyStatusIsError = false;
-        }
-        catch (Exception ex)
-        {
-            _copyStatusMessage = $"Error copying tracks: {ex.Message}";
-            _copyStatusIsError = true;
-        }
-        finally
-        {
-            _isCopying = false;
-            StateHasChanged();
         }
     }
 

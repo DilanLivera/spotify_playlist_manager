@@ -1,4 +1,8 @@
 @using UI.Features.Shared.Domain
+@using UI.Infrastructure.AIAgent
+@using UI.Infrastructure.Spotify
+@inject AITrackFilterService AITrackFilterService
+@inject SpotifyPlaylistService SpotifyPlaylistService
 
 <div class="mb-8 bg-[#232a3b] rounded-lg p-6 shadow-lg">
     <h3 class="text-xl font-semibold text-white mb-4 flex items-center">
@@ -17,17 +21,17 @@
             <div class="flex gap-2">
                 <input type="text"
                        id="ai-prompt-input"
-                       value="@AIPrompt"
-                       @oninput="@(e => AIPrompt = e.Value?.ToString() ?? string.Empty)"
+                       value="@_aiPrompt"
+                       @oninput="@(e => _aiPrompt = e.Value?.ToString() ?? string.Empty)"
                        @onkeydown="HandleAIPromptKeyDown"
                        placeholder="Type your filtering criteria..."
-                       disabled="@(IsAIFiltering || IsLoading)"
+                       disabled="@(_isAIFiltering || IsLoading)"
                        class="flex-1 bg-[#1A1E2A] text-white border border-gray-600 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 focus:border-transparent placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"/>
                 <button type="button"
-                        @onclick="OnApplyFilter"
-                        disabled="@(IsAIFiltering || IsLoading || string.IsNullOrWhiteSpace(AIPrompt))"
+                        @onclick="ApplyAIFilterAsync"
+                        disabled="@(_isAIFiltering || IsLoading || string.IsNullOrWhiteSpace(_aiPrompt))"
                         class="text-white bg-gradient-to-r from-purple-600 to-indigo-500 hover:bg-gradient-to-l focus:ring-2 focus:ring-purple-400 font-medium rounded-lg text-sm px-6 py-2.5 text-center inline-flex items-center justify-center shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">
-                    @if (IsAIFiltering)
+                    @if (_isAIFiltering)
                     {
                         <div class="animate-spin rounded-full h-4 w-4 mr-2 border-t-2 border-b-2 border-white"></div>
                         <span>Filtering...</span>
@@ -41,12 +45,12 @@
                     }
                 </button>
             </div>
-            @if (IsAIFiltering)
+            @if (_isAIFiltering)
             {
                 <div class="mt-2 text-sm text-gray-400 flex items-center">
                     <svg class="animate-spin h-4 w-4 mr-2 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
                     AI is analyzing @TotalTrackCount tracks... This may take a moment.
                 </div>
@@ -57,32 +61,32 @@
         <div>
             <label class="block text-gray-400 text-sm mb-2">Matching Tracks</label>
             <div class="bg-[#1A1E2A] text-white border border-gray-600 rounded-lg px-4 py-2.5 h-[50px] flex items-center justify-center">
-                <span class="text-green-400 font-semibold text-lg">@MatchingTracksCount</span>
+                <span class="text-green-400 font-semibold text-lg">@GetMatchingTracksCount()</span>
                 <span class="text-gray-400 ml-2">of @TotalTrackCount</span>
             </div>
         </div>
     </div>
 
     @* Destination Playlist and Copy Section *@
-    @if (HasActiveFilter && MatchingTracksCount > 0)
+    @if (_currentFilter != null && GetMatchingTracksCount() > 0)
     {
         <div class="mt-4 p-4 bg-[#1A1E2A] rounded-lg border border-gray-700">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
                 <div>
                     <label class="block text-gray-400 text-sm mb-2">Destination Playlist</label>
                     <input type="text"
-                           value="@DestinationPlaylistName"
-                           @oninput="@(e => DestinationPlaylistName = e.Value?.ToString() ?? string.Empty)"
+                           value="@_destinationPlaylistName"
+                           @oninput="@(e => _destinationPlaylistName = e.Value?.ToString() ?? string.Empty)"
                            placeholder="Enter playlist name"
-                           disabled="@IsCopying"
+                           disabled="@_isCopying"
                            class="w-full bg-[#232a3b] text-white border border-gray-600 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 focus:border-transparent placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"/>
                 </div>
                 <div>
                     <button type="button"
-                            @onclick="OnCopyTracks"
-                            disabled="@(IsCopying || string.IsNullOrWhiteSpace(DestinationPlaylistName))"
+                            @onclick="CopyTracksToPlaylistAsync"
+                            disabled="@(_isCopying || string.IsNullOrWhiteSpace(_destinationPlaylistName))"
                             class="w-full text-white bg-gradient-to-r from-green-600 to-emerald-500 hover:bg-gradient-to-l focus:ring-2 focus:ring-green-400 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center justify-center shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
-                        @if (IsCopying)
+                        @if (_isCopying)
                         {
                             <div class="animate-spin rounded-full h-4 w-4 mr-2 border-t-2 border-b-2 border-white"></div>
                             <span>Copying...</span>
@@ -105,20 +109,22 @@
     }
 
     @* Status Message *@
-    @if (!string.IsNullOrEmpty(StatusMessage))
+    @if (!string.IsNullOrEmpty(_statusMessage))
     {
-        <div class="mt-4 p-3 rounded-lg @(StatusIsError ? "bg-red-900/50 text-red-300" : "bg-green-900/50 text-green-300")">
-            @StatusMessage
+        <div class="mt-4 p-3 rounded-lg @(_statusIsError ? "bg-red-900/50 text-red-300" : "bg-green-900/50 text-green-300")">
+            @_statusMessage
         </div>
     }
 </div>
 
 @code {
-    [Parameter]
-    public string AIPrompt { get; set; } = string.Empty;
-
-    [Parameter]
-    public bool IsAIFiltering { get; set; }
+    private string _aiPrompt = string.Empty;
+    private bool _isAIFiltering = false;
+    private ITrackFilter? _currentFilter = null;
+    private string _destinationPlaylistName = string.Empty;
+    private bool _isCopying = false;
+    private string _statusMessage = string.Empty;
+    private bool _statusIsError = false;
 
     [Parameter]
     public bool IsLoading { get; set; }
@@ -127,37 +133,115 @@
     public int TotalTrackCount { get; set; }
 
     [Parameter]
-    public int MatchingTracksCount { get; set; }
+    public IReadOnlyList<Track> Tracks { get; set; } = [];
 
     [Parameter]
-    public bool HasActiveFilter { get; set; }
-
-    [Parameter]
-    public string DestinationPlaylistName { get; set; } = string.Empty;
-
-    [Parameter]
-    public bool IsCopying { get; set; }
-
-    [Parameter]
-    public string StatusMessage { get; set; } = string.Empty;
-
-    [Parameter]
-    public bool StatusIsError { get; set; }
-
-    [Parameter]
-    public EventCallback OnApplyFilter { get; set; }
-
-    [Parameter]
-    public EventCallback OnCopyTracks { get; set; }
-
-    [Parameter]
-    public EventCallback<KeyboardEventArgs> OnAIPromptKeyDown { get; set; }
+    public CancellationToken CancellationToken { get; set; }
 
     private async Task HandleAIPromptKeyDown(KeyboardEventArgs e)
     {
-        if (OnAIPromptKeyDown.HasDelegate)
+        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(_aiPrompt) && !_isAIFiltering && !IsLoading)
         {
-            await OnAIPromptKeyDown.InvokeAsync(e);
+            await ApplyAIFilterAsync();
+        }
+    }
+
+    private async Task ApplyAIFilterAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_aiPrompt) || _isAIFiltering || IsLoading)
+        {
+            return;
+        }
+
+        try
+        {
+            _isAIFiltering = true;
+            _statusMessage = string.Empty;
+            _statusIsError = false;
+            StateHasChanged();
+
+            // Create AI filter using the factory method
+            _currentFilter = await AITrackFilter.CreateAsync(
+                userPrompt: _aiPrompt,
+                tracks: Tracks,
+                aiService: AITrackFilterService,
+                cancellationToken: CancellationToken);
+
+            // Update destination playlist name with AI suggestion
+            _destinationPlaylistName = _currentFilter.SuggestedPlaylistName;
+
+            _statusMessage = $"AI found {GetMatchingTracksCount()} matching tracks!";
+            _statusIsError = false;
+        }
+        catch (HttpRequestException)
+        {
+            _statusMessage = "Error: Could not connect to Ollama. Please ensure Ollama is running on your machine.";
+            _statusIsError = true;
+            _currentFilter = null;
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = $"Error applying AI filter: {ex.Message}";
+            _statusIsError = true;
+            _currentFilter = null;
+        }
+        finally
+        {
+            _isAIFiltering = false;
+            StateHasChanged();
+        }
+    }
+
+    private int GetMatchingTracksCount() => _currentFilter == null ? 0 : Tracks.Count(_currentFilter.Matches);
+
+    private List<Track> GetMatchingTracks() => _currentFilter == null ? [] : Tracks.Where(_currentFilter.Matches).ToList();
+
+    private async Task CopyTracksToPlaylistAsync()
+    {
+        if (_isCopying || string.IsNullOrWhiteSpace(_destinationPlaylistName))
+        {
+            return;
+        }
+
+        List<Track> matchingTracks = GetMatchingTracks();
+
+        if (matchingTracks.Count == 0)
+        {
+            _statusMessage = "No tracks match the selected filter.";
+            _statusIsError = true;
+
+            return;
+        }
+
+        try
+        {
+            _isCopying = true;
+            _statusMessage = string.Empty;
+            StateHasChanged();
+
+            // Get or create the destination playlist
+            Playlist destinationPlaylist = await SpotifyPlaylistService.GetOrCreatePlaylistAsync(
+                name: _destinationPlaylistName.Trim(),
+                description: $"Tracks filtered by: {_currentFilter?.Name ?? "AI Filter"}");
+
+            // Convert track IDs to Spotify URIs
+            IEnumerable<string> trackUris = matchingTracks.Select(t => t.ToSpotifyUri());
+
+            // Add tracks to playlist
+            await SpotifyPlaylistService.AddTracksToPlaylistAsync(destinationPlaylist.Id, trackUris);
+
+            _statusMessage = $"Successfully copied {matchingTracks.Count} tracks to '{destinationPlaylist.Name}'.";
+            _statusIsError = false;
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = $"Error copying tracks: {ex.Message}";
+            _statusIsError = true;
+        }
+        finally
+        {
+            _isCopying = false;
+            StateHasChanged();
         }
     }
 }
