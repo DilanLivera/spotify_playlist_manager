@@ -25,7 +25,7 @@ public sealed class AITrackFilterService
     {
         _ollamaClient = ollamaClient;
         _logger = logger;
-        _systemInstructions = configuration["AIAgent:SystemInstructions"] ?? 
+        _systemInstructions = configuration["AIAgent:SystemInstructions"] ??
                               "You are a helpful music filtering assistant.";
     }
 
@@ -49,7 +49,6 @@ public sealed class AITrackFilterService
 
         try
         {
-            // Convert tracks to simplified DTOs for the LLM
             List<TrackFilterDto> trackDtos = trackList.Select(t => new TrackFilterDto
             {
                 Id = t.Id,
@@ -69,7 +68,6 @@ public sealed class AITrackFilterService
 
             activity?.SetTag("ai.track_count", trackDtos.Count);
 
-            // Build the prompt for the AI
             string tracksJson = JsonSerializer.Serialize(trackDtos, new JsonSerializerOptions
             {
                 WriteIndented = false,
@@ -78,10 +76,10 @@ public sealed class AITrackFilterService
 
             string fullPrompt = $"""
                 User filtering request: "{userPrompt}"
-                
+
                 Analyze the following tracks and determine which ones match the user's criteria.
                 Consider all available metadata including track name, artist, album, year, genre, and audio features.
-                
+
                 Audio features explanation:
                 - Energy (0.0-1.0): Intensity and activity (higher = more energetic)
                 - Valence (0.0-1.0): Musical positiveness (higher = happier/more positive)
@@ -90,10 +88,10 @@ public sealed class AITrackFilterService
                 - Acousticness (0.0-1.0): Confidence the track is acoustic
                 - Instrumentalness (0.0-1.0): Likelihood track contains no vocals
                 - Mood: Derived from energy and valence (Upbeat/Happy, Chill/Calm, Sad/Gloomy, Angry/Aggressive, Neutral)
-                
+
                 Tracks data:
                 {tracksJson}
-                
+
                 Respond ONLY with a JSON array of track IDs that match the criteria, nothing else.
                 Format: ["track_id_1", "track_id_2", ...]
                 If no tracks match, return an empty array: []
@@ -101,13 +99,21 @@ public sealed class AITrackFilterService
 
             _logger.LogDebug("Sending prompt to Ollama (prompt length: {Length} chars)", fullPrompt.Length);
 
-            // Call Ollama with chat request
-            ChatRequest chatRequest = new ChatRequest
+            ChatRequest chatRequest = new()
             {
+                Model = _ollamaClient.SelectedModel,
                 Messages = new List<Message>
                 {
-                    new Message { Role = "system", Content = _systemInstructions },
-                    new Message { Role = "user", Content = fullPrompt }
+                    new()
+                    {
+                        Role = "system",
+                        Content = _systemInstructions
+                    },
+                    new()
+                    {
+                        Role = "user",
+                        Content = fullPrompt
+                    }
                 }
             };
 
@@ -122,7 +128,6 @@ public sealed class AITrackFilterService
 
             _logger.LogDebug("Received Ollama response: {Response}", response);
 
-            // Parse the response to extract track IDs
             HashSet<string> matchingTrackIds = ParseTrackIds(response);
 
             _logger.LogInformation("AI filtered {MatchCount} of {TotalCount} tracks for prompt: {Prompt}",
@@ -167,7 +172,7 @@ public sealed class AITrackFilterService
             // Try to find JSON array in the response
             int arrayStart = cleanedResponse.IndexOf('[');
             int arrayEnd = cleanedResponse.LastIndexOf(']');
-            
+
             if (arrayStart >= 0 && arrayEnd > arrayStart)
             {
                 cleanedResponse = cleanedResponse.Substring(arrayStart, arrayEnd - arrayStart + 1);
@@ -199,7 +204,7 @@ public sealed class AITrackFilterService
         {
             string namePrompt = $"""
                 Based on this music filtering request: "{userPrompt}"
-                
+
                 Generate a short, catchy playlist name (max 50 characters) that captures the essence of this filter.
                 Respond ONLY with the playlist name, nothing else. Do not use quotes.
                 Examples: "2000s Upbeat Hits", "Chill Acoustic Vibes", "Energetic Workout Mix"
