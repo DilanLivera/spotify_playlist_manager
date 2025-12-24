@@ -124,7 +124,7 @@ public sealed class AiTrackFilterService
             string response = string.Empty;
             await foreach (ChatResponseStream? stream in _ollamaClient.Chat(chatRequest, cancellationToken))
             {
-                if (stream?.Message?.Content != null)
+                if (stream?.Message.Content != null)
                 {
                     response += stream.Message.Content;
                 }
@@ -169,7 +169,7 @@ public sealed class AiTrackFilterService
             {
                 // Remove markdown code block markers
                 int firstNewline = cleanedResponse.IndexOf('\n');
-                int lastBackticks = cleanedResponse.LastIndexOf("```");
+                int lastBackticks = cleanedResponse.LastIndexOf("```", StringComparison.Ordinal);
                 if (firstNewline > 0 && lastBackticks > firstNewline)
                 {
                     cleanedResponse = cleanedResponse.Substring(firstNewline + 1, lastBackticks - firstNewline - 1).Trim();
@@ -222,20 +222,28 @@ public sealed class AiTrackFilterService
             activity?.SetTag("ai.full_prompt", namePrompt);
             activity?.SetTag("ai.full_prompt_length", namePrompt.Length);
 
-            ChatRequest chatRequest = new ChatRequest
+            ChatRequest chatRequest = new()
             {
                 Model = _ollamaClient.SelectedModel,
                 Messages = new List<Message>
                 {
-                    new Message { Role = "system", Content = _systemInstructions },
-                    new Message { Role = "user", Content = namePrompt }
+                    new()
+                    {
+                        Role = "system",
+                        Content = _systemInstructions
+                    },
+                    new()
+                    {
+                        Role = "user",
+                        Content = namePrompt
+                    }
                 }
             };
 
             string response = string.Empty;
             await foreach (ChatResponseStream? stream in _ollamaClient.Chat(chatRequest, cancellationToken))
             {
-                if (stream?.Message?.Content != null)
+                if (stream?.Message.Content != null)
                 {
                     response += stream.Message.Content;
                 }
