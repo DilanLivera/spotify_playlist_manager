@@ -11,17 +11,17 @@ public interface ITrackFilter
     /// <summary>
     /// Display name for this filter.
     /// </summary>
-    string Name { get; }
+    public string Name { get; }
 
     /// <summary>
     /// Suggested playlist name when copying filtered tracks.
     /// </summary>
-    string SuggestedPlaylistName { get; }
+    public string SuggestedPlaylistName { get; }
 
     /// <summary>
     /// Determines if a track matches the filter criteria.
     /// </summary>
-    bool Matches(Track track);
+    public bool Matches(Track track);
 }
 
 /// <summary>

@@ -99,9 +99,11 @@ public sealed class SpotifyPlaylistService
             string requestUri = $"users/{user.Id}/playlists";
 
             CreatePlaylistRequest request = new()
-                                            {
-                                                Name = name, Description = description, Public = false
-                                            };
+            {
+                Name = name,
+                Description = description,
+                Public = false
+            };
 
             HttpResponseMessage response = await _httpClient.PostAsJsonAsync(requestUri, request);
             response.EnsureSuccessStatusCode();
@@ -137,9 +139,9 @@ public sealed class SpotifyPlaylistService
             string requestUri = $"playlists/{playlistId}/tracks";
 
             AddTracksRequest request = new()
-                                       {
-                                           Uris = uriList
-                                       };
+            {
+                Uris = uriList
+            };
 
             HttpResponseMessage response = await _httpClient.PostAsJsonAsync(requestUri, request);
             response.EnsureSuccessStatusCode();

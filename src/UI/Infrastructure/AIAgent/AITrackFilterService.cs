@@ -233,7 +233,7 @@ public sealed class AITrackFilterService
             // Ensure it's not too long
             if (playlistName.Length > 50)
             {
-                playlistName = playlistName.Substring(0, 47) + "...";
+                playlistName = playlistName[..47] + "...";
             }
 
             _logger.LogInformation("Generated playlist name: {Name} for prompt: {Prompt}", playlistName, userPrompt);

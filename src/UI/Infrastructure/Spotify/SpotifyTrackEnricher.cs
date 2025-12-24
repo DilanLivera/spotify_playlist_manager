@@ -62,10 +62,7 @@ public sealed class SpotifyTrackEnricher
     /// <summary>
     /// Returns audio features dictionary for mapping to domain entities.
     /// </summary>
-    public async Task<Dictionary<string, ReccoBeatsAudioFeatures>> GetAudioFeaturesAsync(string[] trackIds, CancellationToken cancellationToken)
-    {
-        return await GetAudioFeaturesFromReccoBeatsAsync(trackIds, cancellationToken);
-    }
+    public async Task<Dictionary<string, ReccoBeatsAudioFeatures>> GetAudioFeaturesAsync(string[] trackIds, CancellationToken cancellationToken) => await GetAudioFeaturesFromReccoBeatsAsync(trackIds, cancellationToken);
 
     private async Task<Dictionary<string, ReccoBeatsAudioFeatures>> GetAudioFeaturesFromReccoBeatsAsync(string[] trackIds, CancellationToken cancellationToken)
     {
@@ -123,10 +120,7 @@ public sealed class SpotifyTrackEnricher
         {
             // Spotify allows up to 50 artist IDs per request
             const int batchSize = 50;
-            List<string[]> batches = artistIds.Select((id, index) => new
-                                                                     {
-                                                                         id, index
-                                                                     })
+            List<string[]> batches = artistIds.Select((id, index) => new { id, index })
                                               .GroupBy(x => x.index / batchSize)
                                               .Select(g => g.Select(x => x.id).ToArray())
                                               .ToList();

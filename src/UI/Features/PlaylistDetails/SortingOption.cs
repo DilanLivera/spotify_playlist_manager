@@ -5,4 +5,3 @@ public enum SortingOption
     Genre,
     Decade
 }
-

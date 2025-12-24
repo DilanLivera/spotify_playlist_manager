@@ -57,9 +57,9 @@ public static class AuthExtensions
                    async (HttpContext context) =>
                    {
                        AuthenticationProperties properties = new()
-                                                             {
-                                                                 RedirectUri = "/"
-                                                             };
+                       {
+                           RedirectUri = "/"
+                       };
                        await context.ChallengeAsync(GoogleDefaults.AuthenticationScheme, properties);
 
                        return Results.Empty;
