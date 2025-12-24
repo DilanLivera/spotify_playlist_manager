@@ -56,6 +56,55 @@ Sort Spotify playlist songs by genre.
 5. Grant the requested permissions to your application
 6. Start managing and sorting your playlists by genre
 
+### Running with Docker Compose (Optional)
+
+Docker Compose provides optional infrastructure services for enhanced functionality:
+
+- **Aspire Dashboard**: Visualize application telemetry (traces, metrics, logs) in real-time
+- **Ollama**: AI-powered natural language track filtering
+
+#### Prerequisites
+
+- Docker and Docker Compose installed
+- The application still runs locally (not containerized) - only infrastructure services run in Docker
+
+#### Starting Services
+
+1. Start Aspire Dashboard and Ollama:
+   ```bash
+   docker compose up -d aspire-dashboard ollama
+   ```
+
+2. Pull the Ollama model (first time only):
+   ```bash
+   docker exec -it ollama ollama pull llama3.2
+   ```
+
+3. Run the application locally:
+   ```bash
+   dotnet run --project src/UI/UI.csproj --launch-profile http
+   ```
+
+4. Access the services:
+   - Application: `http://127.0.0.1:5155`
+   - Aspire Dashboard: `http://127.0.0.1:18888`
+
+#### Stopping Services
+
+```bash
+docker compose down
+```
+
+#### Running Everything in Docker (Alternative)
+
+To run the entire application stack in Docker:
+
+```bash
+docker compose up -d --force-recreate --build
+```
+
+**Note**: When running in Docker, you'll need to configure your Spotify app's redirect URI to use the container's network or expose the app appropriately.
+
 ## Development Setup
 
 ### Git Hooks

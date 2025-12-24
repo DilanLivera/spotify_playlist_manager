@@ -1,0 +1,69 @@
+# to run the compose file: docker compose up -d --force-recreate --build
+name: spotify_playlist_manager
+
+services:
+
+  aspire-dashboard:
+    # https://learn.microsoft.com/samples/dotnet/aspire-samples/aspire-standalone-dashboard
+    # https://hub.docker.com/r/microsoft/dotnet-aspire-dashboard/
+    image: mcr.microsoft.com/dotnet/aspire-dashboard:latest
+    container_name: aspire-dashboard
+    hostname: aspire-dashboard
+    environment:
+      - DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS=true
+    ports:
+      - "127.0.0.1:18888:18888"
+      - "127.0.0.1:18889:18889"
+    restart: unless-stopped
+    networks:
+      - spotify-network
+
+  # after container is started,
+  # run 'ollama pull <model_name>' command manually in container's terminal
+  # or run 'docker exec -it ollama ollama pull <model_name>' command from a terminal(outside of container)
+  # please refer to the https://ollama.com/search to find a list of models
+  # you can use the following request to test
+  # curl http://localhost:11434/api/generate -d '{
+  #   "model": "llama3.2",
+  #   "prompt": "Why is the sky blue? Answer in 10 words.",
+  #   "stream": false
+  # }'
+  ollama:
+    # https://hub.docker.com/r/ollama/ollama
+    image: ollama/ollama:latest
+    container_name: ollama
+    hostname: ollama
+    ports:
+      - "127.0.0.1:11434:11434"
+    pull_policy: always
+    restart: unless-stopped
+    tty: true
+    volumes:
+      - ./container_volumes/ollama:/root/.ollama
+    networks:
+      - spotify-network
+
+  app:
+    build:
+      context: .
+      dockerfile: src/UI/Dockerfile
+    container_name: spotify-playlist-manager
+    hostname: app
+    ports:
+      - "127.0.0.1:5155:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - AIAgent__OllamaEndpoint=http://ollama:11434
+      - Observability__OtlpEndpoint=http://aspire-dashboard:18889
+    depends_on:
+      - aspire-dashboard
+      - ollama
+    restart: unless-stopped
+    networks:
+      - spotify-network
+
+networks:
+  spotify-network:
+    driver: bridge
+
