@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using UI.Infrastructure.Observability;
+using UI.Infrastructure.Persistence;
 using UI.Infrastructure.ReccoBeats;
 using UI.Infrastructure.Spotify.Models;
 
@@ -13,15 +14,18 @@ public sealed class SpotifyTrackEnricher
 {
     private readonly HttpClient _httpClient;
     private readonly ReccoBeatsService _reccoBeatsService;
+    private readonly TrackCacheService _cacheService;
     private readonly ILogger<SpotifyTrackEnricher> _logger;
 
     public SpotifyTrackEnricher(
         HttpClient httpClient,
         ReccoBeatsService reccoBeatsService,
+        TrackCacheService cacheService,
         ILogger<SpotifyTrackEnricher> logger)
     {
         _httpClient = httpClient;
         _reccoBeatsService = reccoBeatsService;
+        _cacheService = cacheService;
         _logger = logger;
     }
 
@@ -66,42 +70,58 @@ public sealed class SpotifyTrackEnricher
 
     private async Task<Dictionary<string, ReccoBeatsAudioFeatures>> GetAudioFeaturesFromReccoBeatsAsync(string[] trackIds, CancellationToken cancellationToken)
     {
-        Dictionary<string, ReccoBeatsAudioFeatures> audioFeaturesMap = new();
-
         if (trackIds.Length == 0)
         {
-            return audioFeaturesMap;
+            return new Dictionary<string, ReccoBeatsAudioFeatures>();
         }
 
-        _logger.LogDebug("Fetching audio features for {TrackCount} tracks from ReccoBeats", trackIds.Length);
+        _logger.LogDebug("Processing audio features for {TrackCount} tracks", trackIds.Length);
 
         try
         {
-            // ReccoBeats API requires individual requests per track (no bulk endpoint)
-            // Process tracks sequentially to respect rate limits
-            foreach (string trackId in trackIds)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
+            // 1. Check SQLite cache first for all tracks (handles batching internally)
+            Dictionary<string, ReccoBeatsAudioFeatures> audioFeaturesMap = await _cacheService.GetCachedFeaturesAsync(trackIds, cancellationToken);
 
-                ReccoBeatsAudioFeatures? features = await _reccoBeatsService.GetAudioFeaturesAsync(trackId, cancellationToken);
-
-                if (features != null)
-                {
-                    audioFeaturesMap[trackId] = features;
-                }
-            }
-
-            _logger.LogInformation("Fetched audio features for {SuccessCount}/{TotalCount} tracks from ReccoBeats",
-                                   audioFeaturesMap.Count,
+            _logger.LogInformation("Found {CacheCount}/{TotalCount} tracks in SQLite cache", 
+                                   audioFeaturesMap.Count, 
                                    trackIds.Length);
+
+            // 2. Identify missing tracks
+            string[] missingTrackIds = trackIds.Where(id => !audioFeaturesMap.ContainsKey(id)).ToArray();
+
+            if (missingTrackIds.Length > 0)
+            {
+                _logger.LogInformation("Fetching {MissingCount} tracks from ReccoBeats API", missingTrackIds.Length);
+
+                // 3. Fetch missing tracks from ReccoBeats API
+                // Process tracks sequentially to respect rate limits (as before)
+                foreach (string trackId in missingTrackIds)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    ReccoBeatsAudioFeatures? features = await _reccoBeatsService.GetAudioFeaturesAsync(trackId, cancellationToken);
+
+                    if (features != null)
+                    {
+                        audioFeaturesMap[trackId] = features;
+                        
+                        // 4. Save to SQLite cache asynchronously
+                        await _cacheService.SaveFeaturesAsync(trackId, features, cancellationToken);
+                    }
+                }
+
+                _logger.LogInformation("Successfully enriched {SuccessCount}/{TotalCount} tracks (Cache + API)",
+                                       audioFeaturesMap.Count,
+                                       trackIds.Length);
+            }
 
             return audioFeaturesMap;
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            _logger.LogWarning(ex, "Error getting audio features from ReccoBeats, returning partial results");
+            _logger.LogWarning(ex, "Error getting audio features, returning partial results");
 
-            return audioFeaturesMap;
+            return new Dictionary<string, ReccoBeatsAudioFeatures>();
         }
     }
 
