@@ -14,8 +14,7 @@ public static class PersistenceExtensions
     {
         // Register TrackCacheService as a Singleton since the cache is shared across the app
         services.AddSingleton<TrackCacheService>();
-        
+
         return services;
     }
 }
-

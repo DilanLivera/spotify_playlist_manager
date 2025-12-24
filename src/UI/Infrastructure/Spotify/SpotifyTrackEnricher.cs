@@ -82,8 +82,8 @@ public sealed class SpotifyTrackEnricher
             // 1. Check SQLite cache first for all tracks (handles batching internally)
             Dictionary<string, ReccoBeatsAudioFeatures> audioFeaturesMap = await _cacheService.GetCachedFeaturesAsync(trackIds, cancellationToken);
 
-            _logger.LogInformation("Found {CacheCount}/{TotalCount} tracks in SQLite cache", 
-                                   audioFeaturesMap.Count, 
+            _logger.LogInformation("Found {CacheCount}/{TotalCount} tracks in SQLite cache",
+                                   audioFeaturesMap.Count,
                                    trackIds.Length);
 
             // 2. Identify missing tracks
@@ -104,7 +104,7 @@ public sealed class SpotifyTrackEnricher
                     if (features != null)
                     {
                         audioFeaturesMap[trackId] = features;
-                        
+
                         // 4. Save to SQLite cache asynchronously
                         await _cacheService.SaveFeaturesAsync(trackId, features, cancellationToken);
                     }

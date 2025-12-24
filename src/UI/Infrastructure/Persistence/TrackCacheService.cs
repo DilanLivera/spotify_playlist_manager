@@ -1,5 +1,5 @@
-using Microsoft.Data.Sqlite;
 using System.Text.Json;
+using Microsoft.Data.Sqlite;
 using UI.Infrastructure.ReccoBeats;
 
 namespace UI.Infrastructure.Persistence;
@@ -28,7 +28,7 @@ public sealed class TrackCacheService
             connection.Open();
 
             using var command = connection.CreateCommand();
-            
+
             // Enable WAL mode for better concurrency and performance
             command.CommandText = "PRAGMA journal_mode=WAL;";
             command.ExecuteNonQuery();
@@ -61,14 +61,14 @@ public sealed class TrackCacheService
     public async Task<Dictionary<string, ReccoBeatsAudioFeatures>> GetCachedFeaturesAsync(string[] trackIds, CancellationToken ct)
     {
         var results = new Dictionary<string, ReccoBeatsAudioFeatures>();
-        
+
         if (trackIds.Length == 0)
         {
             return results;
         }
 
         const int batchSize = 500;
-        
+
         try
         {
             using var connection = new SqliteConnection(_connectionString);
@@ -78,10 +78,10 @@ public sealed class TrackCacheService
             {
                 var batch = trackIds.Skip(i).Take(batchSize).ToArray();
                 var parameterNames = string.Join(",", batch.Select((_, idx) => $"@id{i + idx}"));
-                
+
                 using var command = connection.CreateCommand();
                 command.CommandText = $"SELECT SpotifyTrackId, JsonData FROM ReccoBeatsCache WHERE SpotifyTrackId IN ({parameterNames})";
-                
+
                 for (int idx = 0; idx < batch.Length; idx++)
                 {
                     command.Parameters.AddWithValue($"@id{i + idx}", batch[idx]);
@@ -92,7 +92,7 @@ public sealed class TrackCacheService
                 {
                     var trackId = reader.GetString(0);
                     var json = reader.GetString(1);
-                    
+
                     try
                     {
                         var features = JsonSerializer.Deserialize<ReccoBeatsAudioFeatures>(json);
@@ -133,7 +133,7 @@ public sealed class TrackCacheService
             """;
             command.Parameters.AddWithValue("@id", trackId);
             command.Parameters.AddWithValue("@json", JsonSerializer.Serialize(features));
-            
+
             await command.ExecuteNonQueryAsync(ct);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
@@ -142,4 +142,3 @@ public sealed class TrackCacheService
         }
     }
 }
-

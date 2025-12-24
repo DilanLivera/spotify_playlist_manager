@@ -1,7 +1,7 @@
 @using UI.Features.Shared.Domain
 @using UI.Infrastructure.AIAgent
 @using UI.Infrastructure.Spotify
-@inject AITrackFilterService AITrackFilterService
+@inject AiTrackFilterService AiTrackFilterService
 @inject SpotifyPlaylistService SpotifyPlaylistService
 
 <div class="mb-8 bg-[#232a3b] rounded-lg p-6 shadow-lg">
@@ -23,15 +23,15 @@
                        id="ai-prompt-input"
                        value="@_aiPrompt"
                        @oninput="@(e => _aiPrompt = e.Value?.ToString() ?? string.Empty)"
-                       @onkeydown="HandleAIPromptKeyDown"
+                       @onkeydown="HandleAiPromptKeyDown"
                        placeholder="Type your filtering criteria..."
-                       disabled="@(_isAIFiltering || IsLoading)"
+                       disabled="@(_isAiFiltering || IsLoading)"
                        class="flex-1 bg-[#1A1E2A] text-white border border-gray-600 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 focus:border-transparent placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"/>
                 <button type="button"
-                        @onclick="ApplyAIFilterAsync"
-                        disabled="@(_isAIFiltering || IsLoading || string.IsNullOrWhiteSpace(_aiPrompt))"
+                        @onclick="ApplyAiFilterAsync"
+                        disabled="@(_isAiFiltering || IsLoading || string.IsNullOrWhiteSpace(_aiPrompt))"
                         class="text-white bg-gradient-to-r from-purple-600 to-indigo-500 hover:bg-gradient-to-l focus:ring-2 focus:ring-purple-400 font-medium rounded-lg text-sm px-6 py-2.5 text-center inline-flex items-center justify-center shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">
-                    @if (_isAIFiltering)
+                    @if (_isAiFiltering)
                     {
                         <div class="animate-spin rounded-full h-4 w-4 mr-2 border-t-2 border-b-2 border-white"></div>
                         <span>Filtering...</span>
@@ -45,7 +45,7 @@
                     }
                 </button>
             </div>
-            @if (_isAIFiltering)
+            @if (_isAiFiltering)
             {
                 <div class="mt-2 text-sm text-gray-400 flex items-center">
                     <svg class="animate-spin h-4 w-4 mr-2 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -119,7 +119,7 @@
 
 @code {
     private string _aiPrompt = string.Empty;
-    private bool _isAIFiltering = false;
+    private bool _isAiFiltering = false;
     private ITrackFilter? _currentFilter = null;
     private string _destinationPlaylistName = string.Empty;
     private bool _isCopying = false;
@@ -138,33 +138,33 @@
     [Parameter]
     public CancellationToken CancellationToken { get; set; }
 
-    private async Task HandleAIPromptKeyDown(KeyboardEventArgs e)
+    private async Task HandleAiPromptKeyDown(KeyboardEventArgs e)
     {
-        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(_aiPrompt) && !_isAIFiltering && !IsLoading)
+        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(_aiPrompt) && !_isAiFiltering && !IsLoading)
         {
-            await ApplyAIFilterAsync();
+            await ApplyAiFilterAsync();
         }
     }
 
-    private async Task ApplyAIFilterAsync()
+    private async Task ApplyAiFilterAsync()
     {
-        if (string.IsNullOrWhiteSpace(_aiPrompt) || _isAIFiltering || IsLoading)
+        if (string.IsNullOrWhiteSpace(_aiPrompt) || _isAiFiltering || IsLoading)
         {
             return;
         }
 
         try
         {
-            _isAIFiltering = true;
+            _isAiFiltering = true;
             _statusMessage = string.Empty;
             _statusIsError = false;
             StateHasChanged();
 
             // Create AI filter using the factory method
-            _currentFilter = await AITrackFilter.CreateAsync(
+            _currentFilter = await AiTrackFilter.CreateAsync(
                 userPrompt: _aiPrompt,
                 tracks: Tracks,
-                aiService: AITrackFilterService,
+                aiService: AiTrackFilterService,
                 cancellationToken: CancellationToken);
 
             // Update destination playlist name with AI suggestion
@@ -187,7 +187,7 @@
         }
         finally
         {
-            _isAIFiltering = false;
+            _isAiFiltering = false;
             StateHasChanged();
         }
     }

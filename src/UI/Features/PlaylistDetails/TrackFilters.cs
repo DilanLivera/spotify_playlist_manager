@@ -88,7 +88,7 @@ public sealed class CompositeFilter : ITrackFilter
 /// Filters tracks using AI-powered natural language analysis.
 /// Evaluates tracks against user-provided criteria via Ollama LLM.
 /// </summary>
-public sealed class AITrackFilter : ITrackFilter
+public sealed class AiTrackFilter : ITrackFilter
 {
     private readonly string _userPrompt;
     private readonly string _suggestedPlaylistName;
@@ -100,7 +100,7 @@ public sealed class AITrackFilter : ITrackFilter
     /// <param name="userPrompt">The natural language filtering criteria</param>
     /// <param name="suggestedPlaylistName">AI-generated suggested playlist name</param>
     /// <param name="matchingTrackIds">Set of track IDs that match the criteria</param>
-    public AITrackFilter(string userPrompt, string suggestedPlaylistName, HashSet<string> matchingTrackIds)
+    public AiTrackFilter(string userPrompt, string suggestedPlaylistName, HashSet<string> matchingTrackIds)
     {
         _userPrompt = userPrompt;
         _suggestedPlaylistName = suggestedPlaylistName;
@@ -124,10 +124,10 @@ public sealed class AITrackFilter : ITrackFilter
     /// <param name="aiService">AI track filter service</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>A new AITrackFilter with pre-computed matching track IDs</returns>
-    public static async Task<AITrackFilter> CreateAsync(
+    public static async Task<AiTrackFilter> CreateAsync(
         string userPrompt,
         IEnumerable<Track> tracks,
-        AITrackFilterService aiService,
+        AiTrackFilterService aiService,
         CancellationToken cancellationToken = default)
     {
         // Run AI filtering to get matching track IDs
@@ -136,6 +136,6 @@ public sealed class AITrackFilter : ITrackFilter
         // Generate a suggested playlist name
         string suggestedPlaylistName = await aiService.GeneratePlaylistNameAsync(userPrompt, cancellationToken);
 
-        return new AITrackFilter(userPrompt, suggestedPlaylistName, matchingTrackIds);
+        return new AiTrackFilter(userPrompt, suggestedPlaylistName, matchingTrackIds);
     }
 }

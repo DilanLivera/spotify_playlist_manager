@@ -12,16 +12,16 @@ namespace UI.Infrastructure.AIAgent;
 /// Service for filtering tracks using AI-powered natural language analysis.
 /// Uses Ollama (local LLM) to evaluate tracks against user criteria.
 /// </summary>
-public sealed class AITrackFilterService
+public sealed class AiTrackFilterService
 {
     private readonly OllamaApiClient _ollamaClient;
-    private readonly ILogger<AITrackFilterService> _logger;
+    private readonly ILogger<AiTrackFilterService> _logger;
     private readonly string _systemInstructions;
 
-    public AITrackFilterService(
+    public AiTrackFilterService(
         OllamaApiClient ollamaClient,
         IConfiguration configuration,
-        ILogger<AITrackFilterService> logger)
+        ILogger<AiTrackFilterService> logger)
     {
         _ollamaClient = ollamaClient;
         _logger = logger;

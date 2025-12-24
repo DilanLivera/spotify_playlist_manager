@@ -5,7 +5,7 @@ namespace UI.Infrastructure.AIAgent;
 /// <summary>
 /// Extension methods for configuring AI Agent services.
 /// </summary>
-public static class AIAgentExtensions
+public static class AiAgentExtensions
 {
     /// <summary>
     /// Adds AI Agent services to the application.
@@ -14,7 +14,7 @@ public static class AIAgentExtensions
     /// <param name="services">The service collection.</param>
     /// <param name="configuration">The application configuration.</param>
     /// <returns>The service collection for chaining.</returns>
-    public static IServiceCollection AddAIAgentServices(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddAiAgentServices(this IServiceCollection services, IConfiguration configuration)
     {
         string ollamaEndpoint = configuration["AIAgent:OllamaEndpoint"] ?? throw new Exception("'AIAgent:OllamaEndpoint' configuration value is missing");
         string modelName = configuration["AIAgent:ModelName"] ?? throw new Exception("'AIAgent:ModelName' configuration value is missing");
@@ -36,7 +36,7 @@ public static class AIAgentExtensions
             return client;
         });
 
-        services.AddScoped<AITrackFilterService>();
+        services.AddScoped<AiTrackFilterService>();
 
         return services;
     }

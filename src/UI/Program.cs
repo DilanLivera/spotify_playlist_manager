@@ -21,7 +21,7 @@ builder.Services.AddHttpClient();
 
 builder.Services.AddSpotifyServices();
 
-builder.Services.AddAIAgentServices(builder.Configuration);
+builder.Services.AddAiAgentServices(builder.Configuration);
 
 builder.Services.AddPersistenceServices();
 
