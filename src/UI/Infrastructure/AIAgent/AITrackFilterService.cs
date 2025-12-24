@@ -43,6 +43,8 @@ public sealed class AITrackFilterService
     {
         using Activity? activity = ObservabilityExtensions.StartActivity("AIFilterTracks");
         activity?.SetTag("ai.prompt", userPrompt);
+        activity?.SetTag("ai.system_instructions", _systemInstructions);
+        activity?.SetTag("ai.model", _ollamaClient.SelectedModel);
 
         List<Track> trackList = tracks.ToList();
         _logger.LogDebug("Starting AI filtering with prompt: {Prompt} for {TrackCount} tracks", userPrompt, trackList.Count);
@@ -99,6 +101,9 @@ public sealed class AITrackFilterService
 
             _logger.LogDebug("Sending prompt to Ollama (prompt length: {Length} chars)", fullPrompt.Length);
 
+            activity?.SetTag("ai.full_prompt", fullPrompt);
+            activity?.SetTag("ai.full_prompt_length", fullPrompt.Length);
+
             ChatRequest chatRequest = new()
             {
                 Model = _ollamaClient.SelectedModel,
@@ -127,6 +132,9 @@ public sealed class AITrackFilterService
             }
 
             _logger.LogDebug("Received Ollama response: {Response}", response);
+
+            activity?.SetTag("ai.response", response);
+            activity?.SetTag("ai.response_length", response.Length);
 
             HashSet<string> matchingTrackIds = ParseTrackIds(response);
 
@@ -199,6 +207,8 @@ public sealed class AITrackFilterService
     {
         using Activity? activity = ObservabilityExtensions.StartActivity("AIGeneratePlaylistName");
         activity?.SetTag("ai.prompt", userPrompt);
+        activity?.SetTag("ai.system_instructions", _systemInstructions);
+        activity?.SetTag("ai.model", _ollamaClient.SelectedModel);
 
         try
         {
@@ -209,6 +219,9 @@ public sealed class AITrackFilterService
                 Respond ONLY with the playlist name, nothing else. Do not use quotes.
                 Examples: "2000s Upbeat Hits", "Chill Acoustic Vibes", "Energetic Workout Mix"
                 """;
+
+            activity?.SetTag("ai.full_prompt", namePrompt);
+            activity?.SetTag("ai.full_prompt_length", namePrompt.Length);
 
             ChatRequest chatRequest = new ChatRequest
             {
@@ -227,6 +240,9 @@ public sealed class AITrackFilterService
                     response += stream.Message.Content;
                 }
             }
+
+            activity?.SetTag("ai.response", response);
+            activity?.SetTag("ai.response_length", response.Length);
 
             string playlistName = response.Trim().Trim('"', '\'');
 
