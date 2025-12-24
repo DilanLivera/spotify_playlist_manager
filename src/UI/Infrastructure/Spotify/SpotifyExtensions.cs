@@ -16,21 +16,26 @@ public static class SpotifyExtensions
         services.AddScoped<SpotifyAuthService>();
         services.AddScoped<SpotifyAuthSessionManager>();
 
-        // Register the authentication handler
+        // Register HTTP handlers
+        services.AddTransient<UI.Infrastructure.Observability.HttpLoggingHandler>();
         services.AddTransient<SpotifyAuthenticationHandler>();
 
-        // Register specialized Spotify services with the authentication handler
+        // Register specialized Spotify services with handlers (logging before auth)
         services.AddHttpClient<SpotifyPlaylistService>()
+                .AddHttpMessageHandler<UI.Infrastructure.Observability.HttpLoggingHandler>()
                 .AddHttpMessageHandler<SpotifyAuthenticationHandler>();
 
         services.AddHttpClient<SpotifyTrackService>()
+                .AddHttpMessageHandler<UI.Infrastructure.Observability.HttpLoggingHandler>()
                 .AddHttpMessageHandler<SpotifyAuthenticationHandler>();
 
         services.AddHttpClient<SpotifyUserService>()
+                .AddHttpMessageHandler<UI.Infrastructure.Observability.HttpLoggingHandler>()
                 .AddHttpMessageHandler<SpotifyAuthenticationHandler>();
 
-        // Register SpotifyTrackEnricher with the authentication handler
+        // Register SpotifyTrackEnricher with handlers
         services.AddHttpClient<SpotifyTrackEnricher>()
+                .AddHttpMessageHandler<UI.Infrastructure.Observability.HttpLoggingHandler>()
                 .AddHttpMessageHandler<SpotifyAuthenticationHandler>()
                 .ConfigureHttpClient(client =>
                 {
