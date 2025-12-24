@@ -115,22 +115,29 @@ public sealed class Track
     }
 
     /// <summary>
-    /// Gets the mood label based on audio features (Valence and Energy).
-    /// Returns: Upbeat/Happy, Chill/Calm, Sad/Gloomy, Angry/Aggressive, or Neutral.
+    /// Gets a human-readable string for the musical key (0=C, 1=C#, etc.).
     /// </summary>
-    public string GetMood()
+    public string GetKeyDisplay() => Key switch
     {
-        if (Valence > 0.6f && Energy > 0.6f)
-            return "Upbeat/Happy";
-        if (Valence > 0.5f && Energy < 0.4f)
-            return "Chill/Calm";
-        if (Valence < 0.3f && Energy < 0.3f)
-            return "Sad/Gloomy";
-        if (Valence < 0.3f && Energy > 0.7f)
-            return "Angry/Aggressive";
+        0 => "C",
+        1 => "C♯/D♭",
+        2 => "D",
+        3 => "D♯/E♭",
+        4 => "E",
+        5 => "F",
+        6 => "F♯/G♭",
+        7 => "G",
+        8 => "G♯/A♭",
+        9 => "A",
+        10 => "A♯/B♭",
+        11 => "B",
+        _ => "Unknown"
+    };
 
-        return "Neutral";
-    }
+    /// <summary>
+    /// Gets a human-readable string for the modality (Major/Minor).
+    /// </summary>
+    public string GetModeDisplay() => Mode == 1 ? "Major" : "Minor";
 
     /// <summary>
     /// Gets the decade from the album release date (e.g., "1990s", "2000s").

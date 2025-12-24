@@ -64,8 +64,7 @@ public sealed class AiTrackFilterService
                 Danceability = t.Danceability,
                 Tempo = t.Tempo,
                 Acousticness = t.Acousticness,
-                Instrumentalness = t.Instrumentalness,
-                Mood = t.GetMood()
+                Instrumentalness = t.Instrumentalness
             }).ToList();
 
             activity?.SetTag("ai.track_count", trackDtos.Count);

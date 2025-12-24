@@ -25,7 +25,7 @@
                                 {
                                     <th class="pb-2 font-medium">Album</th>
                                     <th class="pb-2 font-medium">Release Date</th>
-                                    <th class="pb-2 font-medium">Mood</th>
+                                    <th class="pb-2 font-medium text-right">Details</th>
                                 }
                             </tr>
                             </thead>
@@ -55,7 +55,7 @@
                                             <div class="h-4 bg-gray-700 rounded w-20"></div>
                                         </td>
                                         <td class="py-3">
-                                            <div class="h-6 bg-gray-700 rounded-full w-24"></div>
+                                            <div class="h-12 bg-gray-700 rounded w-32 ml-auto"></div>
                                         </td>
                                     }
                                 </tr>
@@ -122,7 +122,7 @@
                                     {
                                         <th class="pb-2 font-medium">Album</th>
                                         <th class="pb-2 font-medium">Release Date</th>
-                                        <th class="pb-2 font-medium">Mood</th>
+                                        <th class="pb-2 font-medium text-right">Details</th>
                                     }
                                 </tr>
                                 </thead>
@@ -162,10 +162,24 @@
                                         {
                                             <td class="py-3 text-gray-400">@track.Album?.Name</td>
                                             <td class="py-3 text-gray-400">@track.Album?.ReleaseDate</td>
-                                            <td class="py-3">
-                                                <span class="px-2 py-1 rounded-full text-xs font-semibold @GetMoodClass(track.GetMood())">
-                                                    @track.GetMood()
-                                                </span>
+                                            <td class="py-3 text-right">
+                                                <div class="flex flex-col items-end text-[10px] text-gray-400 leading-tight">
+                                                    <div class="flex gap-2">
+                                                        <span>Ene: @(track.Energy.ToString("P0"))</span>
+                                                        <span>Val: @(track.Valence.ToString("P0"))</span>
+                                                        <span>Dan: @(track.Danceability.ToString("P0"))</span>
+                                                    </div>
+                                                    <div class="flex gap-2">
+                                                        <span>Aco: @(track.Acousticness.ToString("P0"))</span>
+                                                        <span>Ins: @(track.Instrumentalness.ToString("P0"))</span>
+                                                        <span>Spe: @(track.Speechiness.ToString("P0"))</span>
+                                                    </div>
+                                                    <div class="flex gap-2 font-medium text-gray-300">
+                                                        <span>@track.Tempo.ToString("F0") BPM</span>
+                                                        <span>@track.GetKeyDisplay() @track.GetModeDisplay()</span>
+                                                        <span>@track.Loudness.ToString("F1") dB</span>
+                                                    </div>
+                                                </div>
                                             </td>
                                         }
                                     </tr>
@@ -202,14 +216,5 @@
     }
 
     private bool IsSectionCollapsed(string key) => _collapsedSections.Contains(key);
-
-    private string GetMoodClass(string mood) => mood switch
-    {
-        "Upbeat/Happy" => "bg-yellow-900/50 text-yellow-300",
-        "Chill/Calm" => "bg-blue-900/50 text-blue-300",
-        "Sad/Gloomy" => "bg-indigo-900/50 text-indigo-300",
-        "Angry/Aggressive" => "bg-red-900/50 text-red-300",
-        _ => "bg-gray-800 text-gray-400"
-    };
 }
 
