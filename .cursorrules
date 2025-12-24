@@ -26,7 +26,7 @@ src/UI/
 └── wwwroot/app.css
 ```
 
-**Principles**: 
+**Principles**:
 - Feature-based organization with shared Domain entities
 - Domain entities are pure C# POCOs with business logic
 - Infrastructure handles only technical concerns (HTTP, auth, serialization)
@@ -97,6 +97,15 @@ activity?.SetStatus(ActivityStatusCode.Error, ex.Message);  // on failure
 ## Git Commits
 
 Follow [Conventional Commits](https://www.conventionalcommits.org/): `feat`, `fix`, `build`, `chore`, `docs`, `refactor`, `perf`, `test`. Max 72 chars, imperative mood.
+
+**ATOMIC COMMITS (REQUIRED)**:
+- Commit after EACH completed step in multi-step tasks
+- Each commit = one logical change that builds successfully
+- After completing a TODO, commit immediately before the next
+- Single commit OK if multiple files serve one logical change
+- Multiple commits REQUIRED for multiple distinct changes
+
+**Examples**: ✅ Step 1 → commit → Step 2 → commit | ❌ Steps 1+2+3 → single commit
 
 ## Run
 
