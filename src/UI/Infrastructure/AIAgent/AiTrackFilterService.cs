@@ -224,6 +224,7 @@ public sealed class AiTrackFilterService
 
             ChatRequest chatRequest = new ChatRequest
             {
+                Model = _ollamaClient.SelectedModel,
                 Messages = new List<Message>
                 {
                     new Message { Role = "system", Content = _systemInstructions },
