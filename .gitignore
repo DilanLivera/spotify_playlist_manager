@@ -485,3 +485,6 @@ $RECYCLE.BIN/
 
 # Onnx models
 *.onnx
+
+# container data
+container_volumes
