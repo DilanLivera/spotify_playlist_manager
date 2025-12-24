@@ -40,7 +40,7 @@
                               OnSortingChanged="HandleSortingChanged"
                               OnViewChanged="HandleViewChanged" />
 
-        <AIFilterSection IsLoading="@_isLoading"
+        <AiFilterSection IsLoading="@_isLoading"
                          TotalTrackCount="@_tracks.Count"
                          Tracks="@_tracks"
                          CancellationToken="@(_cancellationTokenSource?.Token ?? CancellationToken.None)" />
