@@ -24,10 +24,10 @@ public sealed class TrackCacheService
     {
         try
         {
-            using var connection = new SqliteConnection(_connectionString);
+            using SqliteConnection connection = new(_connectionString);
             connection.Open();
 
-            using var command = connection.CreateCommand();
+            using SqliteCommand command = connection.CreateCommand();
 
             // Enable WAL mode for better concurrency and performance
             command.CommandText = "PRAGMA journal_mode=WAL;";
@@ -40,7 +40,7 @@ public sealed class TrackCacheService
                     JsonData TEXT NOT NULL,
                     CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
                 );
-                
+
                 CREATE INDEX IF NOT EXISTS IX_ReccoBeatsCache_SpotifyTrackId ON ReccoBeatsCache(SpotifyTrackId);
             """;
             command.ExecuteNonQuery();
@@ -60,7 +60,7 @@ public sealed class TrackCacheService
     /// </summary>
     public async Task<Dictionary<string, ReccoBeatsAudioFeatures>> GetCachedFeaturesAsync(string[] trackIds, CancellationToken ct)
     {
-        var results = new Dictionary<string, ReccoBeatsAudioFeatures>();
+        Dictionary<string, ReccoBeatsAudioFeatures> results = new();
 
         if (trackIds.Length == 0)
         {
@@ -71,15 +71,15 @@ public sealed class TrackCacheService
 
         try
         {
-            using var connection = new SqliteConnection(_connectionString);
+            await using SqliteConnection connection = new(_connectionString);
             await connection.OpenAsync(ct);
 
             for (int i = 0; i < trackIds.Length; i += batchSize)
             {
-                var batch = trackIds.Skip(i).Take(batchSize).ToArray();
-                var parameterNames = string.Join(",", batch.Select((_, idx) => $"@id{i + idx}"));
+                string[] batch = trackIds.Skip(i).Take(batchSize).ToArray();
+                string parameterNames = string.Join(",", batch.Select((_, idx) => $"@id{i + idx}"));
 
-                using var command = connection.CreateCommand();
+                await using SqliteCommand command = connection.CreateCommand();
                 command.CommandText = $"SELECT SpotifyTrackId, JsonData FROM ReccoBeatsCache WHERE SpotifyTrackId IN ({parameterNames})";
 
                 for (int idx = 0; idx < batch.Length; idx++)
@@ -87,15 +87,15 @@ public sealed class TrackCacheService
                     command.Parameters.AddWithValue($"@id{i + idx}", batch[idx]);
                 }
 
-                using var reader = await command.ExecuteReaderAsync(ct);
+                await using SqliteDataReader reader = await command.ExecuteReaderAsync(ct);
                 while (await reader.ReadAsync(ct))
                 {
-                    var trackId = reader.GetString(0);
-                    var json = reader.GetString(1);
+                    string trackId = reader.GetString(0);
+                    string json = reader.GetString(1);
 
                     try
                     {
-                        var features = JsonSerializer.Deserialize<ReccoBeatsAudioFeatures>(json);
+                        ReccoBeatsAudioFeatures? features = JsonSerializer.Deserialize<ReccoBeatsAudioFeatures>(json);
                         if (features != null)
                         {
                             results[trackId] = features;
@@ -123,10 +123,10 @@ public sealed class TrackCacheService
     {
         try
         {
-            using var connection = new SqliteConnection(_connectionString);
+            await using SqliteConnection connection = new(_connectionString);
             await connection.OpenAsync(ct);
 
-            using var command = connection.CreateCommand();
+            await using SqliteCommand command = connection.CreateCommand();
             command.CommandText = """
                 INSERT OR REPLACE INTO ReccoBeatsCache (SpotifyTrackId, JsonData)
                 VALUES (@id, @json)

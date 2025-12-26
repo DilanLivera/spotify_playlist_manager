@@ -65,7 +65,7 @@ public sealed class HttpLoggingHandler : DelegatingHandler
             if (_options.LogHeaders)
             {
                 StringBuilder headersBuilder = new();
-                foreach (var header in request.Headers.Where(h => !IsSensitiveHeader(h.Key)))
+                foreach (KeyValuePair<string, IEnumerable<string>> header in request.Headers.Where(h => !IsSensitiveHeader(h.Key)))
                 {
                     headersBuilder.AppendLine($"{header.Key}: {string.Join(", ", header.Value)}");
                 }
@@ -121,7 +121,7 @@ public sealed class HttpLoggingHandler : DelegatingHandler
             if (_options.LogHeaders)
             {
                 StringBuilder headersBuilder = new();
-                foreach (var header in response.Headers)
+                foreach (KeyValuePair<string, IEnumerable<string>> header in response.Headers)
                 {
                     headersBuilder.AppendLine($"{header.Key}: {string.Join(", ", header.Value)}");
                 }
@@ -188,7 +188,7 @@ public sealed class HttpLoggingHandler : DelegatingHandler
         response.Content = new StringContent(content, Encoding.UTF8, mediaType ?? "application/json");
 
         // Copy over the original headers
-        foreach (var header in response.Content.Headers.ToList())
+        foreach (KeyValuePair<string, IEnumerable<string>> header in response.Content.Headers.ToList())
         {
             response.Content.Headers.Remove(header.Key);
             response.Content.Headers.TryAddWithoutValidation(header.Key, header.Value);
