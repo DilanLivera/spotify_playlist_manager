@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Text;
-using UI.Infrastructure.Observability;
 
 namespace UI.Infrastructure.Observability;
 

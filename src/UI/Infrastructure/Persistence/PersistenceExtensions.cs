@@ -1,5 +1,3 @@
-using UI.Infrastructure.Persistence;
-
 namespace UI.Infrastructure.Persistence;
 
 /// <summary>
