@@ -1,12 +1,13 @@
 using System.Diagnostics;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using OllamaSharp;
-using OllamaSharp.Models.Chat;
+using Microsoft.Extensions.AI;
 using UI.Features.Shared.Domain;
 using UI.Infrastructure.Observability;
+using ChatRole = Microsoft.Extensions.AI.ChatRole;
 
-namespace UI.Infrastructure.AIAgent;
+namespace UI.Infrastructure.AIChat;
 
 /// <summary>
 /// Service for filtering tracks using AI-powered natural language analysis.
@@ -14,19 +15,21 @@ namespace UI.Infrastructure.AIAgent;
 /// </summary>
 public sealed class AiTrackFilterService
 {
-    private readonly OllamaApiClient _ollamaClient;
+    private readonly IChatClient _chatClient;
     private readonly ILogger<AiTrackFilterService> _logger;
     private readonly string _systemInstructions;
+    private readonly JsonSerializerOptions _jsonSerializerOptions;
 
     public AiTrackFilterService(
-        OllamaApiClient ollamaClient,
+        JsonSerializerOptions jsonSerializerOptions,
+        IChatClient chatClient,
         IConfiguration configuration,
         ILogger<AiTrackFilterService> logger)
     {
-        _ollamaClient = ollamaClient;
+        _jsonSerializerOptions = jsonSerializerOptions;
+        _chatClient = chatClient;
         _logger = logger;
-        _systemInstructions = configuration["AIAgent:SystemInstructions"] ??
-                              "You are a helpful music filtering assistant.";
+        _systemInstructions = configuration["AIChat:SystemInstructions"] ?? "You are a helpful music filtering assistant.";
     }
 
     /// <summary>
@@ -41,17 +44,16 @@ public sealed class AiTrackFilterService
         IEnumerable<Track> tracks,
         CancellationToken cancellationToken = default)
     {
-        using Activity? activity = ObservabilityExtensions.StartActivity("AIFilterTracks");
+        using Activity? activity = ObservabilityExtensions.StartActivity(name: "AIFilterTracks");
         activity?.SetTag("ai.prompt", userPrompt);
         activity?.SetTag("ai.system_instructions", _systemInstructions);
-        activity?.SetTag("ai.model", _ollamaClient.SelectedModel);
 
         List<Track> trackList = tracks.ToList();
         _logger.LogDebug("Starting AI filtering with prompt: {Prompt} for {TrackCount} tracks", userPrompt, trackList.Count);
 
         try
         {
-            List<TrackFilterDto> trackDtos = trackList.Select(t => new TrackFilterDto
+            TrackFilterDto[] trackDtos = trackList.Select(t => new TrackFilterDto
             {
                 Id = t.Id,
                 Name = t.Name,
@@ -65,15 +67,12 @@ public sealed class AiTrackFilterService
                 Tempo = t.Tempo,
                 Acousticness = t.Acousticness,
                 Instrumentalness = t.Instrumentalness
-            }).ToList();
+            })
+                                                  .ToArray();
 
-            activity?.SetTag("ai.track_count", trackDtos.Count);
+            activity?.SetTag("ai.track_count", trackDtos.Length);
 
-            string tracksJson = JsonSerializer.Serialize(trackDtos, new JsonSerializerOptions
-            {
-                WriteIndented = false,
-                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-            });
+            string tracksJson = JsonSerializer.Serialize(trackDtos, _jsonSerializerOptions);
 
             string fullPrompt = $"""
                 User filtering request: "{userPrompt}"
@@ -103,33 +102,21 @@ public sealed class AiTrackFilterService
             activity?.SetTag("ai.full_prompt", fullPrompt);
             activity?.SetTag("ai.full_prompt_length", fullPrompt.Length);
 
-            ChatRequest chatRequest = new()
-            {
-                Model = _ollamaClient.SelectedModel,
-                Messages = new List<Message>
-                {
-                    new()
-                    {
-                        Role = "system",
-                        Content = _systemInstructions
-                    },
-                    new()
-                    {
-                        Role = "user",
-                        Content = fullPrompt
-                    }
-                }
-            };
+            ChatMessage[] chatMessages =
+            [
+                new(ChatRole.System, content: _systemInstructions),
+                new(ChatRole.User, content: fullPrompt),
+            ];
 
-            string response = string.Empty;
-            await foreach (ChatResponseStream? stream in _ollamaClient.Chat(chatRequest, cancellationToken))
+            StringBuilder responseBuilder = new();
+            await foreach (ChatResponseUpdate update in _chatClient.GetStreamingResponseAsync(chatMessages,
+                                                                                              options: new ChatOptions(),
+                                                                                              cancellationToken: cancellationToken))
             {
-                if (stream?.Message.Content != null)
-                {
-                    response += stream.Message.Content;
-                }
+                responseBuilder.Append(update);
             }
 
+            string response = responseBuilder.ToString();
             _logger.LogDebug("Received Ollama response: {Response}", response);
 
             activity?.SetTag("ai.response", response);
@@ -172,7 +159,8 @@ public sealed class AiTrackFilterService
                 int lastBackticks = cleanedResponse.LastIndexOf("```", StringComparison.Ordinal);
                 if (firstNewline > 0 && lastBackticks > firstNewline)
                 {
-                    cleanedResponse = cleanedResponse.Substring(firstNewline + 1, lastBackticks - firstNewline - 1).Trim();
+                    cleanedResponse = cleanedResponse.Substring(startIndex: firstNewline + 1, length: lastBackticks - firstNewline - 1)
+                                                     .Trim();
                 }
             }
 
@@ -182,12 +170,12 @@ public sealed class AiTrackFilterService
 
             if (arrayStart >= 0 && arrayEnd > arrayStart)
             {
-                cleanedResponse = cleanedResponse.Substring(arrayStart, arrayEnd - arrayStart + 1);
+                cleanedResponse = cleanedResponse.Substring(arrayStart, length: arrayEnd - arrayStart + 1);
             }
 
-            List<string>? trackIds = JsonSerializer.Deserialize<List<string>>(cleanedResponse);
+            List<string>? trackIds = JsonSerializer.Deserialize<List<string>>(cleanedResponse, _jsonSerializerOptions);
 
-            return trackIds != null ? new HashSet<string>(trackIds) : [];
+            return trackIds != null ? [.. trackIds] : [];
         }
         catch (JsonException ex)
         {
@@ -204,10 +192,9 @@ public sealed class AiTrackFilterService
         string userPrompt,
         CancellationToken cancellationToken = default)
     {
-        using Activity? activity = ObservabilityExtensions.StartActivity("AIGeneratePlaylistName");
+        using Activity? activity = ObservabilityExtensions.StartActivity(name: "AIGeneratePlaylistName");
         activity?.SetTag("ai.prompt", userPrompt);
         activity?.SetTag("ai.system_instructions", _systemInstructions);
-        activity?.SetTag("ai.model", _ollamaClient.SelectedModel);
 
         try
         {
@@ -222,32 +209,21 @@ public sealed class AiTrackFilterService
             activity?.SetTag("ai.full_prompt", namePrompt);
             activity?.SetTag("ai.full_prompt_length", namePrompt.Length);
 
-            ChatRequest chatRequest = new()
-            {
-                Model = _ollamaClient.SelectedModel,
-                Messages = new List<Message>
-                {
-                    new()
-                    {
-                        Role = "system",
-                        Content = _systemInstructions
-                    },
-                    new()
-                    {
-                        Role = "user",
-                        Content = namePrompt
-                    }
-                }
-            };
+            ChatMessage[] chatMessages =
+            [
+                new(ChatRole.System, content: _systemInstructions),
+                new(ChatRole.User, content: namePrompt),
+            ];
 
-            string response = string.Empty;
-            await foreach (ChatResponseStream? stream in _ollamaClient.Chat(chatRequest, cancellationToken))
+            StringBuilder responseBuilder = new();
+            await foreach (ChatResponseUpdate update in _chatClient.GetStreamingResponseAsync(chatMessages,
+                                                                                              options: new ChatOptions(),
+                                                                                              cancellationToken: cancellationToken))
             {
-                if (stream?.Message.Content != null)
-                {
-                    response += stream.Message.Content;
-                }
+                responseBuilder.Append(update);
             }
+
+            string response = responseBuilder.ToString();
 
             activity?.SetTag("ai.response", response);
             activity?.SetTag("ai.response_length", response.Length);

@@ -1,5 +1,5 @@
 using UI.Features.Shared.Domain;
-using UI.Infrastructure.AIAgent;
+using UI.Infrastructure.AIChat;
 
 namespace UI.Features.PlaylistDetails;
 

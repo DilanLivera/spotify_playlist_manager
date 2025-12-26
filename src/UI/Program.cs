@@ -1,5 +1,7 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using UI.App;
-using UI.Infrastructure.AIAgent;
+using UI.Infrastructure.AIChat;
 using UI.Infrastructure.Auth;
 using UI.Infrastructure.Observability;
 using UI.Infrastructure.Persistence;
@@ -15,13 +17,19 @@ builder.Services
        .AddRazorComponents()
        .AddInteractiveServerComponents();
 
+builder.Services.AddSingleton<JsonSerializerOptions>(_ => new JsonSerializerOptions
+{
+    WriteIndented = false,
+    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+});
+
 builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddHttpClient();
 
 builder.Services.AddSpotifyServices();
 
-builder.Services.AddAiAgentServices(builder.Configuration);
+builder.Services.AddAiChatServices(builder.Configuration);
 
 builder.Services.AddPersistenceServices();
 
