@@ -11,11 +11,15 @@ namespace UI.Infrastructure.Persistence;
 public sealed class TrackCacheService
 {
     private readonly string _connectionString;
+    private readonly JsonSerializerOptions _jsonOptions;
     private readonly ILogger<TrackCacheService> _logger;
 
-    public TrackCacheService(IConfiguration configuration, ILogger<TrackCacheService> logger)
+    public TrackCacheService(JsonSerializerOptions jsonOptions,
+                             IConfiguration configuration,
+                             ILogger<TrackCacheService> logger)
     {
-        _connectionString = configuration.GetConnectionString("TrackCache") ?? "Data Source=tracks_cache.db";
+        _connectionString = configuration.GetConnectionString(name: "TrackCache") ?? "Data Source=tracks_cache.db";
+        _jsonOptions = jsonOptions;
         _logger = logger;
         InitializeDatabase();
     }
@@ -35,14 +39,14 @@ public sealed class TrackCacheService
 
             // Create the cache table if it doesn't exist
             command.CommandText = """
-                CREATE TABLE IF NOT EXISTS ReccoBeatsCache (
-                    SpotifyTrackId TEXT PRIMARY KEY,
-                    JsonData TEXT NOT NULL,
-                    CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
-                );
+                                  CREATE TABLE IF NOT EXISTS ReccoBeatsCache (
+                                      SpotifyTrackId TEXT PRIMARY KEY,
+                                      JsonData TEXT NOT NULL,
+                                      CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
+                                  );
 
-                CREATE INDEX IF NOT EXISTS IX_ReccoBeatsCache_SpotifyTrackId ON ReccoBeatsCache(SpotifyTrackId);
-            """;
+                                  CREATE INDEX IF NOT EXISTS IX_ReccoBeatsCache_SpotifyTrackId ON ReccoBeatsCache(SpotifyTrackId);
+                                  """;
             command.ExecuteNonQuery();
 
             _logger.LogInformation("SQLite cache initialized successfully with connection string: {ConnectionString}", _connectionString);
@@ -63,9 +67,7 @@ public sealed class TrackCacheService
         Dictionary<string, ReccoBeatsAudioFeatures> results = new();
 
         if (trackIds.Length == 0)
-        {
             return results;
-        }
 
         const int batchSize = 500;
 
@@ -77,10 +79,15 @@ public sealed class TrackCacheService
             for (int i = 0; i < trackIds.Length; i += batchSize)
             {
                 string[] batch = trackIds.Skip(i).Take(batchSize).ToArray();
-                string parameterNames = string.Join(",", batch.Select((_, idx) => $"@id{i + idx}"));
+                IEnumerable<string> ids = batch.Select((_, idx) => $"@id{i + idx}");
+                string parameterNames = string.Join(",", ids);
 
                 await using SqliteCommand command = connection.CreateCommand();
-                command.CommandText = $"SELECT SpotifyTrackId, JsonData FROM ReccoBeatsCache WHERE SpotifyTrackId IN ({parameterNames})";
+                command.CommandText = $"""
+                                       SELECT SpotifyTrackId, JsonData
+                                       FROM ReccoBeatsCache
+                                       WHERE SpotifyTrackId IN ({parameterNames})
+                                       """;
 
                 for (int idx = 0; idx < batch.Length; idx++)
                 {
@@ -90,16 +97,17 @@ public sealed class TrackCacheService
                 await using SqliteDataReader reader = await command.ExecuteReaderAsync(ct);
                 while (await reader.ReadAsync(ct))
                 {
-                    string trackId = reader.GetString(0);
-                    string json = reader.GetString(1);
+                    string trackId = reader.GetString(ordinal: 0);
+                    string json = reader.GetString(ordinal: 1);
 
                     try
                     {
-                        ReccoBeatsAudioFeatures? features = JsonSerializer.Deserialize<ReccoBeatsAudioFeatures>(json);
-                        if (features != null)
-                        {
-                            results[trackId] = features;
-                        }
+                        ReccoBeatsAudioFeatures? features = JsonSerializer.Deserialize<ReccoBeatsAudioFeatures>(json, _jsonOptions);
+
+                        if (features == null)
+                            continue;
+
+                        results[trackId] = features;
                     }
                     catch (JsonException ex)
                     {
@@ -128,11 +136,11 @@ public sealed class TrackCacheService
 
             await using SqliteCommand command = connection.CreateCommand();
             command.CommandText = """
-                INSERT OR REPLACE INTO ReccoBeatsCache (SpotifyTrackId, JsonData)
-                VALUES (@id, @json)
-            """;
+                                  INSERT OR REPLACE INTO ReccoBeatsCache (SpotifyTrackId, JsonData)
+                                  VALUES (@id, @json)
+                                  """;
             command.Parameters.AddWithValue("@id", trackId);
-            command.Parameters.AddWithValue("@json", JsonSerializer.Serialize(features));
+            command.Parameters.AddWithValue("@json", JsonSerializer.Serialize(features, _jsonOptions));
 
             await command.ExecuteNonQueryAsync(ct);
         }
