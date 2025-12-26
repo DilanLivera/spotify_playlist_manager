@@ -54,7 +54,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8080
-      - AIAgent__OllamaEndpoint=http://ollama:11434
+      - AIChat__OllamaEndpoint=http://ollama:11434
       - Observability__OtlpEndpoint=http://aspire-dashboard:18889
       - ConnectionStrings__TrackCache=Data Source=/app/data/tracks_cache.db
     depends_on:
