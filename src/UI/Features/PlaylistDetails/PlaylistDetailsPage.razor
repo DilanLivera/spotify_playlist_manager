@@ -80,37 +80,12 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
-        {
-            await LoadPlaylistTracksAsync();
-        }
-    }
+        if (!firstRender) return;
 
-    private async Task LoadPlaylistTracksAsync()
-    {
         try
         {
             _playlist = await SpotifyPlaylistService.GetPlaylistAsync(PlaylistId);
 
-            await LoadAllTracksInBackgroundAsync();
-        }
-        catch (OperationCanceledException)
-        {
-            // Track loading was cancelled, this is expected when navigating away
-        }
-        catch (Exception)
-        {
-            _isLoading = false;
-            StateHasChanged();
-
-            throw;
-        }
-    }
-
-    private async Task LoadAllTracksInBackgroundAsync()
-    {
-        try
-        {
             while (_hasMoreTracks && !_cancellationTokenSource!.Token.IsCancellationRequested)
             {
                 await FetchMoreTracksAsync();
@@ -121,7 +96,12 @@
         }
         catch (OperationCanceledException)
         {
+            // Track loading was cancelled, this is expected when navigating away
+        }
+        catch (Exception)
+        {
             _isLoading = false;
+            StateHasChanged();
 
             throw;
         }
