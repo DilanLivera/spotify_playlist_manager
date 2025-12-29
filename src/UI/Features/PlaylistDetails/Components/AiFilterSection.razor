@@ -1,5 +1,7 @@
+@using System.Diagnostics
 @using UI.Features.Shared.Domain
 @using UI.Infrastructure.AIChat
+@using UI.Infrastructure.Observability
 @using UI.Infrastructure.Spotify
 @inject AiTrackFilterService AiTrackFilterService
 @inject SpotifyPlaylistService SpotifyPlaylistService
@@ -176,6 +178,10 @@
 
     private async Task ApplyAiFilterAsync()
     {
+        using Activity? activity = ObservabilityExtensions.StartActivity(name: "ApplyAiFilter");
+        activity?.SetTag("ai.prompt_from_user", _aiPrompt);
+        activity?.SetTag("ai.playlist_track_count", Tracks.Count);
+
         if (string.IsNullOrWhiteSpace(_aiPrompt) || _isAiFiltering || IsLoading)
         {
             return;
@@ -189,24 +195,15 @@
             _statusIsError = false;
             StateHasChanged();
 
-            // Create AI filter using the factory method
             _currentFilter = await AiTrackFilter.CreateAsync(
                 userPrompt: _aiPrompt,
                 tracks: Tracks,
                 aiService: AiTrackFilterService,
                 cancellationToken: CancellationToken);
 
-            // Update destination playlist name with AI suggestion
             _destinationPlaylistName = _currentFilter.SuggestedPlaylistName;
-
             _statusMessage = $"AI found {GetMatchingTracksCount()} matching tracks!";
             _statusIsError = false;
-        }
-        catch (HttpRequestException)
-        {
-            _statusMessage = "Error: Could not connect to Ollama. Please ensure Ollama is running on your machine.";
-            _statusIsError = true;
-            _currentFilter = null;
         }
         catch (Exception ex)
         {
@@ -221,12 +218,11 @@
         }
     }
 
-    private int GetMatchingTracksCount() => _currentFilter == null ? 0 : Tracks.Count(_currentFilter.Matches);
-
-    private List<Track> GetMatchingTracks() => _currentFilter == null ? [] : Tracks.Where(_currentFilter.Matches).ToList();
-
     private async Task CopyTracksToPlaylistAsync()
     {
+        using Activity? activity = ObservabilityExtensions.StartActivity(name: "CopyTracksToPlaylist");
+        activity?.SetTag("ai.new_playlist_track_count", Tracks.Count);
+
         if (_isCopying || string.IsNullOrWhiteSpace(_destinationPlaylistName))
         {
             return;
@@ -248,15 +244,11 @@
             _statusMessage = string.Empty;
             StateHasChanged();
 
-            // Get or create the destination playlist
-            Playlist destinationPlaylist = await SpotifyPlaylistService.GetOrCreatePlaylistAsync(
-                name: _destinationPlaylistName.Trim(),
-                description: $"Tracks filtered by: {_currentFilter?.Name ?? "AI Filter"}");
+            string name = _destinationPlaylistName.Trim();
+            string description = $"Tracks filtered by: {_currentFilter?.Name ?? "AI Filter"}";
+            Playlist destinationPlaylist = await SpotifyPlaylistService.GetOrCreatePlaylistAsync(name, description);
 
-            // Convert track IDs to Spotify URIs
             IEnumerable<string> trackUris = matchingTracks.Select(t => t.ToSpotifyUri());
-
-            // Add tracks to playlist
             await SpotifyPlaylistService.AddTracksToPlaylistAsync(destinationPlaylist.Id, trackUris);
 
             _statusMessage = $"Successfully copied {matchingTracks.Count} tracks to '{destinationPlaylist.Name}'.";
@@ -273,4 +265,8 @@
             StateHasChanged();
         }
     }
+
+    private int GetMatchingTracksCount() => _currentFilter == null ? 0 : Tracks.Count(_currentFilter.Matches);
+
+    private List<Track> GetMatchingTracks() => _currentFilter == null ? [] : Tracks.Where(_currentFilter.Matches).ToList();
 }

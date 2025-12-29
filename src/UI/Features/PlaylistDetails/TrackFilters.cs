@@ -130,10 +130,8 @@ public sealed class AiTrackFilter : ITrackFilter
         AiTrackFilterService aiService,
         CancellationToken cancellationToken = default)
     {
-        // Run AI filtering to get matching track IDs
         HashSet<string> matchingTrackIds = await aiService.FilterTracksAsync(userPrompt, tracks, cancellationToken);
 
-        // Generate a suggested playlist name
         string suggestedPlaylistName = await aiService.GeneratePlaylistNameAsync(userPrompt, cancellationToken);
 
         return new AiTrackFilter(userPrompt, suggestedPlaylistName, matchingTrackIds);

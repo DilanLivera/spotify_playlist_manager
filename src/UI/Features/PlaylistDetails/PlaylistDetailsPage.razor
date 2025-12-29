@@ -1,6 +1,8 @@
 @page "/playlist/{PlaylistId}"
+@using System.Diagnostics
 @using UI.Features.Shared.Domain
 @using UI.Features.PlaylistDetails.Components
+@using UI.Infrastructure.Observability
 @using UI.Infrastructure.Spotify
 @inject SpotifyPlaylistService SpotifyPlaylistService
 @inject SpotifyTrackService SpotifyTrackService
@@ -69,6 +71,8 @@
 
     protected override void OnInitialized()
     {
+        // using Activity? activity = ObservabilityExtensions.StartActivity(name: "OnInitialized");
+
         _groupedTracks = new Dictionary<string, List<Track>>();
         _cancellationTokenSource = new CancellationTokenSource();
 
@@ -80,6 +84,8 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        // using Activity? activity = ObservabilityExtensions.StartActivity(name: "OnAfterRender");
+
         if (!firstRender) return;
 
         try

@@ -1,5 +1,7 @@
 @page "/"
+@using System.Diagnostics
 @using UI.Features.Shared.Domain
+@using UI.Infrastructure.Observability
 @using UI.Infrastructure.Spotify
 @inject SpotifyPlaylistService SpotifyPlaylistService
 @inject SpotifyAuthSessionManager SpotifyAuthSessionManager
@@ -82,6 +84,8 @@
 
     protected override async Task OnInitializedAsync()
     {
+        using Activity? activity = ObservabilityExtensions.StartActivity("OnInitialized");
+
         if (!SpotifyAuthSessionManager.IsAuthenticated())
         {
             NavigationManager.NavigateTo(uri: "/spotify-auth");
