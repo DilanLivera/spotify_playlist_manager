@@ -70,3 +70,6 @@ app.MapRazorComponents<App>()
    .AddInteractiveServerRenderMode();
 
 app.Run();
+
+TrackCacheService trackCacheService = app.Services.GetRequiredService<TrackCacheService>();
+await trackCacheService.InitializeDatabase();

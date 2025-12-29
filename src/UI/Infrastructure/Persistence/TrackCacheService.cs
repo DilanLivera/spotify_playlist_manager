@@ -1,5 +1,7 @@
+using System.Diagnostics;
 using System.Text.Json;
 using Microsoft.Data.Sqlite;
+using UI.Infrastructure.Observability;
 using UI.Infrastructure.ReccoBeats;
 
 namespace UI.Infrastructure.Persistence;
@@ -21,21 +23,29 @@ public sealed class TrackCacheService
         _connectionString = configuration.GetConnectionString(name: "TrackCache") ?? "Data Source=tracks_cache.db";
         _jsonOptions = jsonOptions;
         _logger = logger;
-        InitializeDatabase();
     }
 
-    private void InitializeDatabase()
+    public async Task InitializeDatabase()
     {
+        using Activity? activity = ObservabilityExtensions.StartActivity(name: "InitializeDatabase");
+
         try
         {
-            using SqliteConnection connection = new(_connectionString);
+            await using SqliteConnection connection = new(_connectionString);
             connection.Open();
 
-            using SqliteCommand command = connection.CreateCommand();
+            await using SqliteCommand command = connection.CreateCommand();
 
             // Enable WAL mode for better concurrency and performance
             command.CommandText = "PRAGMA journal_mode=WAL;";
-            command.ExecuteNonQuery();
+            ActivityTagsCollection enableWalModeTags = new()
+            {
+                ["db.system"] = "sqlite",
+                ["db.statement"] = command.CommandText
+            };
+            ActivityEvent enableWalModeEvent = new(name: "WAL mode enabled.", DateTimeOffset.UtcNow, tags: enableWalModeTags);
+            activity?.AddEvent(enableWalModeEvent);
+            await command.ExecuteNonQueryAsync();
 
             // Create the cache table if it doesn't exist
             command.CommandText = """
@@ -47,13 +57,26 @@ public sealed class TrackCacheService
 
                                   CREATE INDEX IF NOT EXISTS IX_ReccoBeatsCache_SpotifyTrackId ON ReccoBeatsCache(SpotifyTrackId);
                                   """;
-            command.ExecuteNonQuery();
+
+            ActivityTagsCollection tags = new()
+            {
+                ["db.statement"] = command.CommandText
+            };
+            ActivityEvent tableCreatedEvent = new(name: "Table created", DateTimeOffset.UtcNow, tags: tags);
+            activity?.AddEvent(tableCreatedEvent);
+
+            await command.ExecuteNonQueryAsync();
 
             _logger.LogInformation("SQLite cache initialized successfully with connection string: {ConnectionString}", _connectionString);
+
+            activity?.SetStatus(ActivityStatusCode.Ok);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to initialize SQLite cache database");
+
+            Activity.Current?.SetStatus(ActivityStatusCode.Error, ex.Message);
+
             throw;
         }
     }
@@ -64,6 +87,8 @@ public sealed class TrackCacheService
     /// </summary>
     public async Task<Dictionary<string, ReccoBeatsAudioFeatures>> GetCachedFeaturesAsync(string[] trackIds, CancellationToken ct)
     {
+        using Activity? activity = ObservabilityExtensions.StartActivity(name: "GetCachedFeatures");
+
         Dictionary<string, ReccoBeatsAudioFeatures> results = new();
 
         if (trackIds.Length == 0)
@@ -78,7 +103,9 @@ public sealed class TrackCacheService
 
             for (int i = 0; i < trackIds.Length; i += batchSize)
             {
-                string[] batch = trackIds.Skip(i).Take(batchSize).ToArray();
+                string[] batch = trackIds.Skip(i)
+                                         .Take(batchSize)
+                                         .ToArray();
                 IEnumerable<string> ids = batch.Select((_, idx) => $"@id{i + idx}");
                 string parameterNames = string.Join(",", ids);
 
@@ -88,6 +115,9 @@ public sealed class TrackCacheService
                                        FROM ReccoBeatsCache
                                        WHERE SpotifyTrackId IN ({parameterNames})
                                        """;
+
+                activity?.SetTag("db.system", "sqlite");
+                activity?.SetTag("db.statement", command.CommandText);
 
                 for (int idx = 0; idx < batch.Length; idx++)
                 {
@@ -115,13 +145,17 @@ public sealed class TrackCacheService
                     }
                 }
             }
+
+            return results;
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             _logger.LogError(ex, "Error retrieving features from SQLite cache");
-        }
 
-        return results;
+            Activity.Current?.SetStatus(ActivityStatusCode.Error, ex.Message);
+
+            throw;
+        }
     }
 
     /// <summary>
@@ -147,6 +181,10 @@ public sealed class TrackCacheService
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             _logger.LogError(ex, "Error saving features to SQLite cache for track {TrackId}", trackId);
+
+            Activity.Current?.SetStatus(ActivityStatusCode.Error, ex.Message);
+
+            throw;
         }
     }
 }
