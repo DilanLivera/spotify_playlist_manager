@@ -28,8 +28,6 @@ public sealed class SpotifyPlaylistService
 
     public async Task<List<Playlist>> GetUserPlaylistsAsync()
     {
-        using Activity? activity = ObservabilityExtensions.StartActivity("GetUserPlaylists");
-
         _logger.LogDebug("Fetching user playlists from Spotify API");
 
         try
@@ -39,14 +37,16 @@ public sealed class SpotifyPlaylistService
             List<Playlist> playlists = playlistsResponse.Items.MapToDomain().ToList();
 
             _logger.LogInformation("Successfully fetched {PlaylistCount} playlists", playlists.Count);
-            activity?.SetTag("playlist.count", playlists.Count);
+
+            Activity.Current?.SetTag("playlist.count", playlists.Count);
 
             return playlists;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting user playlists");
-            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+
+            Activity.Current?.SetStatus(ActivityStatusCode.Error, ex.Message);
 
             throw;
         }
@@ -54,8 +54,7 @@ public sealed class SpotifyPlaylistService
 
     public async Task<Playlist> GetPlaylistAsync(string playlistId)
     {
-        using Activity? activity = ObservabilityExtensions.StartActivity("GetPlaylist");
-        activity?.SetTag("playlist.id", playlistId);
+        Activity.Current?.SetTag("playlist.id", playlistId);
 
         _logger.LogDebug("Fetching playlist details for {PlaylistId}", playlistId);
 
@@ -71,7 +70,8 @@ public sealed class SpotifyPlaylistService
             _logger.LogInformation("Fetched playlist {PlaylistName} ({PlaylistId})",
                                    playlist.Name,
                                    playlistId);
-            activity?.SetTag("playlist.name", playlist.Name);
+
+            Activity.Current?.SetTag("playlist.name", playlist.Name);
 
             return playlist;
         }
@@ -80,7 +80,8 @@ public sealed class SpotifyPlaylistService
             _logger.LogError(ex,
                              "Error getting playlist details for playlist {PlaylistId}",
                              playlistId);
-            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+
+            Activity.Current?.SetStatus(ActivityStatusCode.Error, ex.Message);
 
             throw;
         }
@@ -88,9 +89,6 @@ public sealed class SpotifyPlaylistService
 
     public async Task<Playlist> CreatePlaylistAsync(string name, string? description = null)
     {
-        using Activity? activity = ObservabilityExtensions.StartActivity("CreatePlaylist");
-        activity?.SetTag("playlist.name", name);
-
         _logger.LogDebug("Creating playlist {PlaylistName}", name);
 
         try
@@ -113,14 +111,22 @@ public sealed class SpotifyPlaylistService
             Playlist playlist = playlistDto.MapToDomain();
 
             _logger.LogInformation("Created playlist {PlaylistName} ({PlaylistId})", playlist.Name, playlist.Id);
-            activity?.SetTag("playlist.id", playlist.Id);
+
+            ActivityTagsCollection tags = new()
+            {
+                ["playlist.id"] = playlist.Id,
+                ["playlist.track_count"] = playlist.TrackCount
+            };
+            ActivityEvent @event = new(name: "Playlist created.", DateTimeOffset.UtcNow, tags);
+            Activity.Current?.AddEvent(@event);
 
             return playlist;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error creating playlist {PlaylistName}", name);
-            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+
+            Activity.Current?.SetStatus(ActivityStatusCode.Error, ex.Message);
 
             throw;
         }
@@ -128,9 +134,6 @@ public sealed class SpotifyPlaylistService
 
     public async Task AddTracksToPlaylistAsync(string playlistId, IEnumerable<string> trackUris)
     {
-        using Activity? activity = ObservabilityExtensions.StartActivity("AddTracksToPlaylist");
-        activity?.SetTag("playlist.id", playlistId);
-
         List<string> uriList = trackUris.ToList();
         _logger.LogDebug("Adding {TrackCount} tracks to playlist {PlaylistId}", uriList.Count, playlistId);
 
@@ -147,12 +150,20 @@ public sealed class SpotifyPlaylistService
             response.EnsureSuccessStatusCode();
 
             _logger.LogInformation("Added {TrackCount} tracks to playlist {PlaylistId}", uriList.Count, playlistId);
-            activity?.SetTag("track.count", uriList.Count);
+
+            ActivityTagsCollection tags = new()
+            {
+                ["playlist.added_tracks_count"] = uriList.Count
+            };
+            ActivityEvent @event = new(name: "Added tracks to playlist.", DateTimeOffset.UtcNow, tags);
+            Activity.Current?.AddEvent(@event);
+
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error adding tracks to playlist {PlaylistId}", playlistId);
-            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+
+            Activity.Current?.SetStatus(ActivityStatusCode.Error, ex.Message);
 
             throw;
         }
@@ -160,25 +171,28 @@ public sealed class SpotifyPlaylistService
 
     public async Task<Playlist?> FindPlaylistByNameAsync(string name)
     {
-        using Activity? activity = ObservabilityExtensions.StartActivity("FindPlaylistByName");
-        activity?.SetTag("playlist.name", name);
-
         _logger.LogDebug("Searching for playlist by name: {PlaylistName}", name);
 
         List<Playlist> playlists = await GetUserPlaylistsAsync();
-        Playlist? playlist = playlists.FirstOrDefault(p =>
-                                                          p.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+        Playlist? playlist = playlists.FirstOrDefault(p => p.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 
         if (playlist != null)
         {
             _logger.LogInformation("Found existing playlist {PlaylistName} ({PlaylistId})", playlist.Name, playlist.Id);
-            activity?.SetTag("playlist.id", playlist.Id);
-            activity?.SetTag("playlist.found", true);
+
+            ActivityTagsCollection tags = new()
+            {
+                ["playlist.existing_tracks_count"] = playlist.TrackCount
+            };
+            ActivityEvent @event = new(name: "Playlist found.", DateTimeOffset.UtcNow, tags);
+            Activity.Current?.AddEvent(@event);
         }
         else
         {
             _logger.LogInformation("Playlist {PlaylistName} not found", name);
-            activity?.SetTag("playlist.found", false);
+
+            ActivityEvent @event = new(name: "Playlist not found.", DateTimeOffset.UtcNow);
+            Activity.Current?.AddEvent(@event);
         }
 
         return playlist;
@@ -186,22 +200,21 @@ public sealed class SpotifyPlaylistService
 
     public async Task<Playlist> GetOrCreatePlaylistAsync(string name, string? description = null)
     {
-        using Activity? activity = ObservabilityExtensions.StartActivity("GetOrCreatePlaylist");
-        activity?.SetTag("playlist.name", name);
+        Activity.Current?.SetTag("playlist.name", name);
+
+        if (!string.IsNullOrEmpty(description))
+        {
+            Activity.Current?.SetTag("playlist.description", name);
+        }
 
         _logger.LogDebug("Getting or creating playlist: {PlaylistName}", name);
 
         Playlist? existingPlaylist = await FindPlaylistByNameAsync(name);
 
         if (existingPlaylist != null)
-        {
-            activity?.SetTag("playlist.created", false);
-
             return existingPlaylist;
-        }
 
         Playlist newPlaylist = await CreatePlaylistAsync(name, description);
-        activity?.SetTag("playlist.created", true);
 
         return newPlaylist;
     }

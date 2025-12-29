@@ -57,9 +57,10 @@ public sealed class ReccoBeatsService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error fetching audio features for track {SpotifyTrackId}", spotifyTrackId);
+
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
 
-            return null;
+            throw;
         }
     }
 
@@ -87,14 +88,18 @@ public sealed class ReccoBeatsService
         {
             _logger.LogWarning(ex, "HTTP error looking up track {SpotifyTrackId}", spotifyTrackId);
 
-            return null;
+            Activity.Current?.SetStatus(ActivityStatusCode.Error, ex.Message);
+
+            throw;
         }
     }
 
     /// <summary>
     /// Fetches audio features with retry logic for rate limiting.
     /// </summary>
-    private async Task<ReccoBeatsAudioFeatures?> FetchAudioFeaturesWithRetryAsync(string reccoBeatsTrackId, string spotifyTrackId, CancellationToken cancellationToken)
+    private async Task<ReccoBeatsAudioFeatures?> FetchAudioFeaturesWithRetryAsync(string reccoBeatsTrackId,
+                                                                                  string spotifyTrackId,
+                                                                                  CancellationToken cancellationToken)
     {
         int maxRetries = 3;
         int retryCount = 0;
@@ -168,7 +173,9 @@ public sealed class ReccoBeatsService
             {
                 _logger.LogWarning(ex, "HTTP error fetching audio features for track {SpotifyTrackId}", spotifyTrackId);
 
-                return null;
+                Activity.Current?.SetStatus(ActivityStatusCode.Error, ex.Message);
+
+                throw;
             }
         }
 

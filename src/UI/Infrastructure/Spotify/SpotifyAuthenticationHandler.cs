@@ -29,42 +29,34 @@ public sealed class SpotifyAuthenticationHandler : DelegatingHandler
         HttpRequestMessage request,
         CancellationToken cancellationToken)
     {
-        using Activity? activity = ObservabilityExtensions.StartActivity("SpotifyAuthHandler");
-
-        // Inject access token into request
         string accessToken = _sessionManager.GetAccessToken();
         if (!string.IsNullOrEmpty(accessToken))
         {
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            request.Headers.Authorization = new AuthenticationHeaderValue(scheme: "Bearer", accessToken);
         }
 
-        // Execute the request
         HttpResponseMessage response = await base.SendAsync(request, cancellationToken);
 
-        // Handle 401 Unauthorized by attempting token refresh
-        if (response.StatusCode == HttpStatusCode.Unauthorized)
+        if (response.StatusCode != HttpStatusCode.Unauthorized)
         {
-            _logger.LogWarning("Received 401 Unauthorized, attempting token refresh");
-            activity?.SetTag("auth.refresh_triggered", true);
-
-            if (await _authService.RefreshTokenAsync())
-            {
-                _logger.LogDebug("Token refreshed successfully, retrying request");
-
-                // Update the request with the new token
-                string newAccessToken = _sessionManager.GetAccessToken();
-                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", newAccessToken);
-
-                // Retry the original request
-                response = await base.SendAsync(request, cancellationToken);
-                activity?.SetTag("auth.retry_success", response.IsSuccessStatusCode);
-            }
-            else
-            {
-                _logger.LogError("Token refresh failed, user needs to re-authenticate");
-                activity?.SetStatus(ActivityStatusCode.Error, "Token refresh failed");
-            }
+            return response;
         }
+
+        _logger.LogWarning("Received 401 Unauthorized, attempting token refresh");
+
+        if (await _authService.RefreshTokenAsync())
+        {
+            _logger.LogDebug("Token refreshed successfully, retrying request");
+
+            string newAccessToken = _sessionManager.GetAccessToken();
+            request.Headers.Authorization = new AuthenticationHeaderValue(scheme: "Bearer", newAccessToken);
+
+            return await base.SendAsync(request, cancellationToken);
+        }
+
+        _logger.LogError("Token refresh failed, user needs to re-authenticate");
+
+        Activity.Current?.SetStatus(ActivityStatusCode.Error, description: "Token refresh failed");
 
         return response;
     }

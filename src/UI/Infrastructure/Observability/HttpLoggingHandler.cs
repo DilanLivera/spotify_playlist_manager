@@ -98,6 +98,10 @@ public sealed class HttpLoggingHandler : DelegatingHandler
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to enrich activity with request details");
+
+            Activity.Current?.SetStatus(ActivityStatusCode.Error, ex.Message);
+
+            throw;
         }
     }
 
@@ -161,6 +165,10 @@ public sealed class HttpLoggingHandler : DelegatingHandler
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to enrich activity with response details");
+
+            Activity.Current?.SetStatus(ActivityStatusCode.Error, ex.Message);
+
+            throw;
         }
     }
 

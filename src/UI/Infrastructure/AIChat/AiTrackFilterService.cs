@@ -44,9 +44,7 @@ public sealed class AiTrackFilterService
         IEnumerable<Track> tracks,
         CancellationToken cancellationToken = default)
     {
-        using Activity? activity = ObservabilityExtensions.StartActivity(name: "AIFilterTracks");
-        activity?.SetTag("ai.prompt", userPrompt);
-        activity?.SetTag("ai.system_instructions", _systemInstructions);
+        Activity.Current?.SetTag("ai.system_instructions", _systemInstructions);
 
         List<Track> trackList = tracks.ToList();
         _logger.LogDebug("Starting AI filtering with prompt: {Prompt} for {TrackCount} tracks", userPrompt, trackList.Count);
@@ -69,8 +67,6 @@ public sealed class AiTrackFilterService
                 Instrumentalness = t.Instrumentalness
             })
                                                   .ToArray();
-
-            activity?.SetTag("ai.track_count", trackDtos.Length);
 
             string tracksJson = JsonSerializer.Serialize(trackDtos, _jsonSerializerOptions);
 
@@ -99,8 +95,8 @@ public sealed class AiTrackFilterService
 
             _logger.LogDebug("Sending prompt to Ollama (prompt length: {Length} chars)", fullPrompt.Length);
 
-            activity?.SetTag("ai.full_prompt", fullPrompt);
-            activity?.SetTag("ai.full_prompt_length", fullPrompt.Length);
+            Activity.Current?.SetTag("ai.full_prompt", fullPrompt);
+            Activity.Current?.SetTag("ai.full_prompt_length", fullPrompt.Length);
 
             ChatMessage[] chatMessages =
             [
@@ -119,8 +115,8 @@ public sealed class AiTrackFilterService
             string response = responseBuilder.ToString();
             _logger.LogDebug("Received Ollama response: {Response}", response);
 
-            activity?.SetTag("ai.response", response);
-            activity?.SetTag("ai.response_length", response.Length);
+            Activity.Current?.SetTag("ai.response", response);
+            Activity.Current?.SetTag("ai.response_length", response.Length);
 
             HashSet<string> matchingTrackIds = ParseTrackIds(response);
 
@@ -129,14 +125,15 @@ public sealed class AiTrackFilterService
                                    trackList.Count,
                                    userPrompt);
 
-            activity?.SetTag("ai.matched_count", matchingTrackIds.Count);
+            Activity.Current?.SetTag("ai.matched_count", matchingTrackIds.Count);
 
             return matchingTrackIds;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during AI track filtering with prompt: {Prompt}", userPrompt);
-            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+
+            Activity.Current?.SetStatus(ActivityStatusCode.Error, ex.Message);
 
             throw;
         }
@@ -181,7 +178,9 @@ public sealed class AiTrackFilterService
         {
             _logger.LogWarning(ex, "Failed to parse AI response as JSON. Response: {Response}", response);
 
-            return [];
+            Activity.Current?.SetStatus(ActivityStatusCode.Error, ex.Message);
+
+            throw;
         }
     }
 
@@ -244,7 +243,9 @@ public sealed class AiTrackFilterService
         {
             _logger.LogWarning(ex, "Failed to generate playlist name, using default");
 
-            return "AI Filtered Playlist";
+            Activity.Current?.SetStatus(ActivityStatusCode.Error, ex.Message);
+
+            throw;
         }
     }
 }

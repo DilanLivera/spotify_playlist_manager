@@ -34,8 +34,11 @@ public sealed class SpotifyTrackEnricher
     /// </summary>
     public async Task EnrichTracksAsync(SpotifyTrack[] tracks, CancellationToken cancellationToken)
     {
-        using Activity? activity = ObservabilityExtensions.StartActivity("EnrichTracks");
-        activity?.SetTag("track.count", tracks.Length);
+        ActivityTagsCollection tags = new()
+        {
+            ["track.count"] = tracks.Length
+        };
+        Activity.Current?.AddEvent(new ActivityEvent(name: "EnrichTracks", DateTimeOffset.UtcNow, tags));
 
         // Extract unique artist IDs
         string[] uniqueArtistIds = tracks.Where(t => t.Artists.Count > 0)
@@ -53,11 +56,11 @@ public sealed class SpotifyTrackEnricher
         // Assign genres to tracks
         foreach (SpotifyTrack track in tracks)
         {
-            if (track.Artists.Count > 0)
-            {
-                string artistId = track.Artists[0].Id;
-                track.Genre = artistGenres.GetValueOrDefault(artistId, "unknown");
-            }
+            if (track.Artists.Count <= 0)
+                continue;
+
+            string artistId = track.Artists[0].Id;
+            track.Genre = artistGenres.GetValueOrDefault(artistId, "unknown");
         }
 
         _logger.LogInformation("Enriched {TrackCount} tracks with genres and audio features", tracks.Length);
@@ -89,31 +92,31 @@ public sealed class SpotifyTrackEnricher
             // 2. Identify missing tracks
             string[] missingTrackIds = trackIds.Where(id => !audioFeaturesMap.ContainsKey(id)).ToArray();
 
-            if (missingTrackIds.Length > 0)
+            if (missingTrackIds.Length <= 0)
+                return audioFeaturesMap;
+
+            _logger.LogInformation("Fetching {MissingCount} tracks from ReccoBeats API", missingTrackIds.Length);
+
+            // 3. Fetch missing tracks from ReccoBeats API
+            // Process tracks sequentially to respect rate limits (as before)
+            foreach (string trackId in missingTrackIds)
             {
-                _logger.LogInformation("Fetching {MissingCount} tracks from ReccoBeats API", missingTrackIds.Length);
+                cancellationToken.ThrowIfCancellationRequested();
 
-                // 3. Fetch missing tracks from ReccoBeats API
-                // Process tracks sequentially to respect rate limits (as before)
-                foreach (string trackId in missingTrackIds)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
+                ReccoBeatsAudioFeatures? features = await _reccoBeatsService.GetAudioFeaturesAsync(trackId, cancellationToken);
 
-                    ReccoBeatsAudioFeatures? features = await _reccoBeatsService.GetAudioFeaturesAsync(trackId, cancellationToken);
+                if (features == null)
+                    continue;
 
-                    if (features != null)
-                    {
-                        audioFeaturesMap[trackId] = features;
+                audioFeaturesMap[trackId] = features;
 
-                        // 4. Save to SQLite cache asynchronously
-                        await _cacheService.SaveFeaturesAsync(trackId, features, cancellationToken);
-                    }
-                }
-
-                _logger.LogInformation("Successfully enriched {SuccessCount}/{TotalCount} tracks (Cache + API)",
-                                       audioFeaturesMap.Count,
-                                       trackIds.Length);
+                // 4. Save to SQLite cache asynchronously
+                await _cacheService.SaveFeaturesAsync(trackId, features, cancellationToken);
             }
+
+            _logger.LogInformation("Successfully enriched {SuccessCount}/{TotalCount} tracks (Cache + API)",
+                                   audioFeaturesMap.Count,
+                                   trackIds.Length);
 
             return audioFeaturesMap;
         }
@@ -121,7 +124,9 @@ public sealed class SpotifyTrackEnricher
         {
             _logger.LogWarning(ex, "Error getting audio features, returning partial results");
 
-            return new Dictionary<string, ReccoBeatsAudioFeatures>();
+            Activity.Current?.SetStatus(ActivityStatusCode.Error, ex.Message);
+
+            throw;
         }
     }
 
@@ -171,7 +176,9 @@ public sealed class SpotifyTrackEnricher
         {
             _logger.LogWarning(ex, "Error getting artist genres in bulk, returning partial results");
 
-            return artistGenres;
+            Activity.Current?.SetStatus(ActivityStatusCode.Error, ex.Message);
+
+            throw;
         }
     }
 }

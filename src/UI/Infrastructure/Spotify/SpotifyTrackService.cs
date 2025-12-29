@@ -29,10 +29,9 @@ public sealed class SpotifyTrackService
 
     public async Task<IReadOnlyList<Track>> GetPlaylistTracksAsync(string playlistId, int offset, int limit, CancellationToken cancellationToken)
     {
-        using Activity? activity = ObservabilityExtensions.StartActivity("GetPlaylistTracks");
-        activity?.SetTag("playlist.id", playlistId);
-        activity?.SetTag("playlist.offset", offset);
-        activity?.SetTag("playlist.limit", limit);
+        Activity.Current?.SetTag("playlist.id", playlistId);
+        Activity.Current?.SetTag("playlist.offset", offset);
+        Activity.Current?.SetTag("playlist.limit", limit);
 
         _logger.LogDebug("Fetching tracks for playlist {PlaylistId} (offset: {Offset}, limit: {Limit})",
                          playlistId,
@@ -59,7 +58,7 @@ public sealed class SpotifyTrackService
             _logger.LogInformation("Fetched {TrackCount} tracks for playlist {PlaylistId}",
                                    tracks.Length,
                                    playlistId);
-            activity?.SetTag("track.count", tracks.Length);
+            Activity.Current?.SetTag("track.count", tracks.Length);
 
             return tracks;
         }
@@ -70,7 +69,7 @@ public sealed class SpotifyTrackService
                              playlistId,
                              offset,
                              limit);
-            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+            Activity.Current?.SetStatus(ActivityStatusCode.Error, ex.Message);
 
             throw;
         }

@@ -123,6 +123,7 @@ public sealed class SpotifyAuthService
         catch (HttpRequestException ex)
         {
             _logger.LogError(ex, "HTTP error exchanging code for tokens: {StatusCode}", ex.StatusCode);
+
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
 
             return (AccessToken: string.Empty, RefreshToken: string.Empty);
@@ -130,6 +131,7 @@ public sealed class SpotifyAuthService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error exchanging code for tokens");
+
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
 
             return (AccessToken: string.Empty, RefreshToken: string.Empty);
@@ -183,6 +185,7 @@ public sealed class SpotifyAuthService
         catch (HttpRequestException ex)
         {
             _logger.LogError(ex, "HTTP error refreshing access token: {StatusCode}", ex.StatusCode);
+
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
 
             return string.Empty;
@@ -190,6 +193,7 @@ public sealed class SpotifyAuthService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error refreshing access token");
+
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
 
             return string.Empty;

@@ -40,6 +40,7 @@ public sealed class SpotifyUserService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting current user");
+
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
 
             throw;
