@@ -488,3 +488,7 @@ $RECYCLE.BIN/
 
 # container data
 container_volumes
+
+# SQLite temporary files
+*.db-shm
+*.db-wal
