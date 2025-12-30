@@ -1,15 +1,5 @@
 <div class="mb-8">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 class="text-3xl font-bold text-white">
-            @if (_sortingBy == SortingOption.Genre)
-            {
-                <span>Sorted by Genre</span>
-            }
-            else
-            {
-                <span>Sorted by Decade</span>
-            }
-        </h1>
         <div class="flex gap-3">
             <div class="bg-[#1A1E2A] p-1 rounded-full shadow-lg">
                 <button type="button"
@@ -78,10 +68,6 @@
                     Loading tracks... (@LoadedCount of @TotalCount loaded, @(TotalCount - LoadedCount) remaining)
                 </span>
             </div>
-        }
-        else
-        {
-            <span>All @LoadedCount tracks loaded in @GroupCount @(_sortingBy == SortingOption.Genre ? "genres" : "decades")</span>
         }
     </p>
 </div>
