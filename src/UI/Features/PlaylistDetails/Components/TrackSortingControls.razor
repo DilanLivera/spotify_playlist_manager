@@ -1,5 +1,5 @@
-<div class="mb-8">
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+<div>
+    <div class="flex flex-col lg:items-end gap-4">
         <div class="flex gap-3">
             <div class="bg-[#1A1E2A] p-1 rounded-full shadow-lg">
                 <button type="button"
@@ -59,17 +59,17 @@
             </button>
         </div>
     </div>
-    <p class="text-gray-400 mt-2">
+    <div class="text-gray-400 mt-2 lg:text-right">
         @if (IsLoading)
         {
-            <div class="flex items-center justify-between flex-wrap gap-2">
+            <div class="flex items-center justify-end flex-wrap gap-2">
                 <span class="flex items-center">
                     <div class="animate-spin rounded-full h-4 w-4 mr-2 border-t-2 border-b-2 border-green-500"></div>
                     Loading tracks... (@LoadedCount of @TotalCount loaded, @(TotalCount - LoadedCount) remaining)
                 </span>
             </div>
         }
-    </p>
+    </div>
 </div>
 
 @code {

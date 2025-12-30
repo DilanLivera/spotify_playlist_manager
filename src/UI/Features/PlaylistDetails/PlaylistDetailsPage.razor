@@ -30,15 +30,17 @@
             </a>
         </div>
 
-        <PlaylistHeader Playlist="@_playlist" />
+        <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-8">
+            <PlaylistHeader Playlist="@_playlist" />
 
-        <TrackSortingControls @ref="_sortingControls"
-                              IsLoading="@_isLoading"
-                              LoadedCount="@_tracks.Count"
-                              TotalCount="@(_playlist?.TrackCount ?? 0)"
-                              GroupCount="@_groupedTracks.Count"
-                              OnSortingChanged="HandleSortingChanged"
-                              OnViewChanged="HandleViewChanged" />
+            <TrackSortingControls @ref="_sortingControls"
+                                  IsLoading="@_isLoading"
+                                  LoadedCount="@_tracks.Count"
+                                  TotalCount="@(_playlist?.TrackCount ?? 0)"
+                                  GroupCount="@_groupedTracks.Count"
+                                  OnSortingChanged="HandleSortingChanged"
+                                  OnViewChanged="HandleViewChanged" />
+        </div>
 
         <AiFilterSection IsLoading="@_isLoading"
                          TotalTrackCount="@_tracks.Count"
