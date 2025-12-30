@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using UI.Features.Shared.Domain;
-using UI.Infrastructure.Observability;
 using UI.Infrastructure.ReccoBeats;
 using UI.Infrastructure.Spotify.Models;
 
