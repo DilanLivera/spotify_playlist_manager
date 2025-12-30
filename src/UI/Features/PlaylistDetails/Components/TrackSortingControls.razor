@@ -1,7 +1,6 @@
-<div>
-    <div class="flex flex-col lg:items-end gap-4">
-        <div class="flex gap-3">
-            <div class="bg-[#1A1E2A] p-1 rounded-full shadow-lg">
+<div class="h-full flex flex-col justify-between items-end">
+    <div class="flex gap-3">
+        <div class="bg-[#1A1E2A] p-1 rounded-full shadow-lg">
                 <button type="button"
                         @onclick="() => SetSorting(SortingOption.Genre)"
                         class="@GetSortingButtonClass(SortingOption.Genre)">
@@ -58,8 +57,7 @@
                 }
             </button>
         </div>
-    </div>
-    <div class="text-gray-400 mt-2 lg:text-right">
+    <div class="text-gray-400 lg:text-right">
         @if (IsLoading)
         {
             <div class="flex items-center justify-end flex-wrap gap-2">
