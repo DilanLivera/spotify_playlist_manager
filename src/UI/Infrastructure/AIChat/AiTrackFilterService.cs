@@ -5,7 +5,6 @@ using System.Text.Json.Serialization;
 using Microsoft.Extensions.AI;
 using UI.Features.Shared.Domain;
 using UI.Infrastructure.Observability;
-using ChatRole = Microsoft.Extensions.AI.ChatRole;
 
 namespace UI.Infrastructure.AIChat;
 

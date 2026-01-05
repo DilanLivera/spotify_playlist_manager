@@ -1,3 +1,5 @@
+using Azure;
+using Azure.AI.OpenAI;
 using Microsoft.Extensions.AI;
 using OllamaSharp;
 
@@ -17,24 +19,56 @@ public static class AiChatExtensions
     /// <returns>The service collection for chaining.</returns>
     public static IServiceCollection AddAiChatServices(this IServiceCollection services, IConfiguration configuration)
     {
-        string ollamaEndpoint = configuration["AIChat:OllamaEndpoint"] ?? throw new Exception("'AIChat:OllamaEndpoint' configuration value is missing");
-        string modelName = configuration["AIChat:ModelName"] ?? throw new Exception("'AIChat:ModelName' configuration value is missing");
-
         services.AddSingleton<IChatClient>(serviceProvider =>
         {
-            ILogger<OllamaApiClient> logger = serviceProvider.GetRequiredService<ILogger<OllamaApiClient>>();
+            ILoggerFactory loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
+            ILogger logger = loggerFactory.CreateLogger(categoryName: "AIChat");
+
+            string? azureOpenAiEndpoint = configuration["AIChat:AzureOpenAI:Endpoint"];
+            string? azureKeyCredential = configuration["AIChat:AzureOpenAI:AzureKeyCredential"];
+            string? azureOpenAiModelName = configuration["AIChat:AzureOpenAI:Model"];
+
+            if (!string.IsNullOrWhiteSpace(azureOpenAiEndpoint) &&
+                !string.IsNullOrWhiteSpace(azureKeyCredential) &&
+                !string.IsNullOrWhiteSpace(azureOpenAiModelName))
+            {
+                Uri endpoint = new(azureOpenAiEndpoint);
+                AzureKeyCredential credential = new(azureKeyCredential);
+                AzureOpenAIClient client = new(endpoint, credential);
+                IChatClient openAiClient = client.GetChatClient(deploymentName: azureOpenAiModelName)
+                                                 .AsIChatClient();
+
+                logger.LogInformation("Configured Azure OpenAI client with endpoint: {Endpoint}, model: {Model}",
+                                      azureOpenAiEndpoint,
+                                      azureOpenAiModelName);
+
+                return openAiClient;
+            }
+
+            string? ollamaEndpoint = configuration["AIChat:OllamaEndpoint"];
+            string? modelName = configuration["AIChat:ModelName"];
+
+            if (string.IsNullOrWhiteSpace(ollamaEndpoint) || string.IsNullOrWhiteSpace(modelName))
+            {
+                throw new InvalidOperationException("""
+                                                    Incomplete configuration for AI Chat. At least one of the following must be fully configured:
+                                                    Azure OpenAI (AIChat:AzureOpenAI:Endpoint, AIChat:AzureOpenAI:AzureKeyCredential, AIChat:AzureOpenAI:Model)
+                                                    or Ollama (AIChat:OllamaEndpoint, AIChat:ModelName).
+                                                    """);
+            }
+
             IHttpClientFactory clientFactory = serviceProvider.GetRequiredService<IHttpClientFactory>();
             HttpClient httpClient = clientFactory.CreateClient(nameof(OllamaApiClient));
             httpClient.BaseAddress = new Uri(ollamaEndpoint);
             httpClient.Timeout = TimeSpan.FromMinutes(30);
 
-            IChatClient client = new OllamaApiClient(httpClient, defaultModel: modelName);
+            IChatClient ollamaClient = new OllamaApiClient(httpClient, defaultModel: modelName);
 
             logger.LogInformation("Configured Ollama client with endpoint: {Endpoint}, model: {Model}",
                                   ollamaEndpoint,
                                   modelName);
 
-            return client;
+            return ollamaClient;
         });
 
         services.AddScoped<AiTrackFilterService>();
