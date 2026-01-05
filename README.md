@@ -43,12 +43,25 @@ Sort Spotify playlist songs by genre.
      }
    }
    ```
-4. Configure Azure OpenAI (optional, for AI-powered filtering):
+4. Configure AI-powered filtering (optional):
+   The application supports both **Ollama** (local) and **Azure OpenAI** (cloud).
+
+   **Option A: Ollama (Default/Local)**
+   By default, the app is configured to use Ollama. If you're running it via Docker Compose (see below), the default settings in `appsettings.json` will work:
+   ```json
+   "AIChat": {
+     "OllamaEndpoint": "http://localhost:11434",
+     "ModelName": "llama3.2"
+   }
+   ```
+
+   **Option B: Azure OpenAI**
+   To use Azure OpenAI, update `appsettings.json` with your deployment details:
    - Go to [Azure AI Foundry](https://ai.azure.com/)
    - Create a project and deploy a model (e.g., `gpt-4o`)
    - Obtain the **Endpoint** and **Key** from the deployment details
    - For more details, refer to the [Azure AI Foundry documentation](https://ai.azure.com/doc/azure/ai-foundry/how-to/develop/sdk-overview?tid=f36634bf-850d-4dae-9140-6432f216a02a#prerequisites)
-   - Update `appsettings.json` (or use User Secrets):
+   - Update configuration:
      ```json
      "AIChat": {
        "AzureOpenAI": {
@@ -58,6 +71,7 @@ Sort Spotify playlist songs by genre.
        }
      }
      ```
+   Note: If both are configured, Azure OpenAI takes precedence.
 
 ### Running the Application
 
