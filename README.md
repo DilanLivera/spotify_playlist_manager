@@ -1,6 +1,6 @@
-# Spotify Playlist Sorter
+# Spotify Playlist Manager
 
-Sort Spotify playlist songs by genre.
+A Blazor Server application to manage and organize Spotify playlists with AI-powered filtering, genre-based sorting, and deep audio feature analytics.
 
 ## Getting Started
 
@@ -175,7 +175,6 @@ The commit-msg hook validates:
 
 - View all your Spotify playlists
 - Sort playlist tracks by genre or decade
-- **Track Mood Analysis**: Automatically categorizes tracks into moods (Happy, Chill, Sad, Angry) based on audio features
 - **Comprehensive Audio Features**: View 11 detailed audio characteristics including Tempo, Key, Loudness, Valence, Energy, Danceability, Acousticness, Instrumentalness, Liveness, Speechiness, and Mode
 - Compact and detailed views of your organized music
 - Copy tracks to another playlist using configurable filters (e.g., songs from 2000 onwards)
@@ -223,12 +222,6 @@ The `SpotifyService` uses bulk fetching to minimize API calls:
 - **Cancellation Support**: Background loading stops immediately when the user navigates away using `CancellationToken`
 
 This reduces genre API calls by ~98% compared to individual requests per track. Audio features are fetched sequentially from ReccoBeats with built-in rate limiting and retry logic.
-
-### Benefits
-
-- **Testability**: Domain logic can be unit tested without mocking HTTP clients
-- **Maintainability**: Business rules are centralized in Domain entities
-- **Decoupling**: UI and application logic are independent of external API structure
 
 ## Track Filter Architecture
 
