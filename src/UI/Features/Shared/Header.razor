@@ -9,13 +9,87 @@
             <div class="flex items-center">
                 <a href="/"
                    class="flex items-center space-x-2">
-                    <svg class="w-8 h-8 text-green-500"
-                         fill="currentColor"
-                         viewBox="0 0 20 20"
+                    <svg class="w-8 h-8"
+                         viewBox="0 0 1024 1024"
                          xmlns="http://www.w3.org/2000/svg">
-                        <path fill-rule="evenodd"
-                              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-2 0c0 .993-.241 1.929-.668 2.754l-1.524-1.525a3.997 3.997 0 00.078-2.183l1.562-1.562C15.802 8.249 16 9.1 16 10zm-5.165 3.913l1.58 1.58A5.98 5.98 0 0110 16a5.976 5.976 0 01-2.516-.552l1.562-1.562a4.006 4.006 0 001.789.027zm-4.677-2.796a4.002 4.002 0 01-.041-2.08l-.08.08-1.53-1.533A5.98 5.98 0 004 10c0 .954.223 1.856.619 2.657l1.54-1.54zm1.088-6.45A5.974 5.974 0 0110 4c.954 0 1.856.223 2.657.619l-1.54 1.54a4.002 4.002 0 00-2.346.033L7.246 4.668zM12 10a2 2 0 11-4 0 2 2 0 014 0z"
-                              clip-rule="evenodd"/>
+                        <defs>
+                            <!-- Background -->
+                            <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="#0f1729"/>
+                                <stop offset="100%" stop-color="#0b1222"/>
+                            </linearGradient>
+
+                            <!-- Spotify green glow -->
+                            <filter id="greenGlow" x="-50%" y="-50%" width="200%" height="200%">
+                                <feGaussianBlur stdDeviation="16" result="blur"/>
+                                <feMerge>
+                                    <feMergeNode in="blur"/>
+                                    <feMergeNode in="SourceGraphic"/>
+                                </feMerge>
+                            </filter>
+
+                            <!-- Soft card shadow -->
+                            <filter id="cardShadow" x="-20%" y="-20%" width="140%" height="140%">
+                                <feDropShadow dx="0" dy="24" stdDeviation="32" flood-color="#000000" flood-opacity="0.35"/>
+                            </filter>
+
+                            <!-- Glass effect -->
+                            <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0%" stop-color="#ffffff" stop-opacity="0.35"/>
+                                <stop offset="100%" stop-color="#ffffff" stop-opacity="0.05"/>
+                            </linearGradient>
+                        </defs>
+
+                        <!-- App icon background -->
+                        <rect
+                            x="64"
+                            y="64"
+                            width="896"
+                            height="896"
+                            rx="200"
+                            fill="url(#bg)"
+                        />
+
+                        <!-- Glass panel -->
+                        <rect
+                            x="220"
+                            y="220"
+                            width="584"
+                            height="584"
+                            rx="72"
+                            fill="url(#glass)"
+                            opacity="0.85"
+                            filter="url(#cardShadow)"
+                        />
+
+                        <!-- Sorting grid -->
+                        <g stroke="#22C55E" stroke-width="6" opacity="0.35">
+                            <line x1="340" y1="320" x2="340" y2="704"/>
+                            <line x1="512" y1="320" x2="512" y2="704"/>
+                            <line x1="684" y1="320" x2="684" y2="704"/>
+
+                            <line x1="300" y1="384" x2="724" y2="384"/>
+                            <line x1="300" y1="512" x2="724" y2="512"/>
+                            <line x1="300" y1="640" x2="724" y2="640"/>
+                        </g>
+
+                        <!-- Music wave / note -->
+                        <path
+                            d="M300 560
+                               C380 420, 460 700, 540 560
+                               S700 420, 780 560"
+                            fill="none"
+                            stroke="#1DB954"
+                            stroke-width="22"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            filter="url(#greenGlow)"
+                        />
+
+                        <!-- Accent nodes -->
+                        <circle cx="300" cy="560" r="10" fill="#1DB954"/>
+                        <circle cx="540" cy="560" r="10" fill="#1DB954"/>
+                        <circle cx="780" cy="560" r="10" fill="#1DB954"/>
                     </svg>
                     <span class="text-xl font-semibold whitespace-nowrap text-green-500">
                         Spotify Playlist Manager
