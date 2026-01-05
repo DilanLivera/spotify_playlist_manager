@@ -73,6 +73,21 @@ Sort Spotify playlist songs by genre.
      ```
    Note: If both are configured, Azure OpenAI takes precedence.
 
+5. Configure Observability (optional):
+   The application is configured to export telemetry to an OTLP endpoint (e.g., Aspire Dashboard).
+   ```json
+   "Observability": {
+     "OtlpEndpoint": "http://localhost:18889",
+     "HttpLogging": {
+       "Enabled": true,
+       "MaxBodyLength": 5000,
+       "LogHeaders": true,
+       "LogRequestBody": true,
+       "LogResponseBody": true
+     }
+   }
+   ```
+
 ### Running the Application
 
 1. Open a shell/powershell window and navigate to the project root directory
