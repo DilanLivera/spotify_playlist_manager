@@ -43,6 +43,21 @@ Sort Spotify playlist songs by genre.
      }
    }
    ```
+4. Configure Azure OpenAI (optional, for AI-powered filtering):
+   - Go to [Azure AI Foundry](https://ai.azure.com/)
+   - Create a project and deploy a model (e.g., `gpt-4o`)
+   - Obtain the **Endpoint** and **Key** from the deployment details
+   - For more details, refer to the [Azure AI Foundry documentation](https://ai.azure.com/doc/azure/ai-foundry/how-to/develop/sdk-overview?tid=f36634bf-850d-4dae-9140-6432f216a02a#prerequisites)
+   - Update `appsettings.json` (or use User Secrets):
+     ```json
+     "AIChat": {
+       "AzureOpenAI": {
+         "AzureKeyCredential": "your-api-key",
+         "Endpoint": "your-endpoint-url",
+         "Model": "your-deployment-name"
+       }
+     }
+     ```
 
 ### Running the Application
 
