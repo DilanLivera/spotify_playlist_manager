@@ -33,16 +33,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ISSUE_TEMPLATE", "ISSUE_TEM
 		.github\ISSUE_TEMPLATE\feature.yml = .github\ISSUE_TEMPLATE\feature.yml
 	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{AB971A23-ED80-4AB6-96B6-EF41E7A38E2D}"
-	ProjectSection(SolutionItems) = preProject
-		.github\workflows\publish-all.yml = .github\workflows\publish-all.yml
-		.github\workflows\template-android.yml = .github\workflows\template-android.yml
-		.github\workflows\template-ios.yml = .github\workflows\template-ios.yml
-		.github\workflows\template-macos.yml = .github\workflows\template-macos.yml
-		.github\workflows\template-tests.yml = .github\workflows\template-tests.yml
-		.github\workflows\template-windows.yml = .github\workflows\template-windows.yml
-	EndProjectSection
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -56,7 +46,6 @@ Global
 		{237973FF-1B7B-4C99-84C7-AD21CAF89DF5} = {EF77E412-0656-4A66-B359-D9D2F71F2916}
 		{FA6CF60E-A7EC-42F7-B969-0FBF7D7E61BD} = {EF77E412-0656-4A66-B359-D9D2F71F2916}
 		{2F823CBF-2B94-4B41-B766-835C43ECB817} = {FA6CF60E-A7EC-42F7-B969-0FBF7D7E61BD}
-		{AB971A23-ED80-4AB6-96B6-EF41E7A38E2D} = {FA6CF60E-A7EC-42F7-B969-0FBF7D7E61BD}
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{01ED2B76-029B-4E1A-B857-F7482424BD62}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
