@@ -17,6 +17,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{F7CE2202-348
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UI", "src\UI\UI.csproj", "{01ED2B76-029B-4E1A-B857-F7482424BD62}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".githooks", ".githooks", "{237973FF-1B7B-4C99-84C7-AD21CAF89DF5}"
+	ProjectSection(SolutionItems) = preProject
+		.githooks\commit-msg = .githooks\commit-msg
+		.githooks\pre-commit = .githooks\pre-commit
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +33,7 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{01ED2B76-029B-4E1A-B857-F7482424BD62} = {F7CE2202-3489-4DAF-B18B-B0DD499C15F0}
+		{237973FF-1B7B-4C99-84C7-AD21CAF89DF5} = {EF77E412-0656-4A66-B359-D9D2F71F2916}
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{01ED2B76-029B-4E1A-B857-F7482424BD62}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
