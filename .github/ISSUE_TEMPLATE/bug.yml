@@ -1,0 +1,51 @@
+name: Bug
+description: Something behaves differently from what it should
+title: "fix: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: The observed behaviour, including any error message verbatim.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What should have happened
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: The shortest reliable path to the failure. Note if it is intermittent.
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Version or commit, OS, runtime/SDK version, and anything else that narrows it down.
+      placeholder: |
+        Version/commit:
+        OS:
+        Runtime:
+    validations:
+      required: false
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Logs, traces, screenshots
+      description: Evidence gathered so far. Paste logs as fenced code blocks.
+    validations:
+      required: false

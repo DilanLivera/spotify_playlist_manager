@@ -1,0 +1,48 @@
+name: Feature
+description: A new capability or a change to existing behaviour
+title: "feat: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Outcome
+      description: What should be true once this is done, in user or system terms? Not how to build it.
+      placeholder: A reader can filter the archive by tag and land on a page listing only those posts.
+    validations:
+      required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: Why
+      description: The problem this solves or the value it adds. Skip if the outcome already says it.
+    validations:
+      required: false
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Observable checks that decide whether this is finished.
+      value: |
+        - [ ]
+        - [ ]
+    validations:
+      required: true
+
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of scope
+      description: Adjacent work this issue deliberately leaves alone, and where it belongs instead.
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context and links
+      description: Related issues, ADRs, designs, prior discussion.
+    validations:
+      required: false

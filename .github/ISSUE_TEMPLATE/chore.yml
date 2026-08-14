@@ -1,0 +1,44 @@
+name: Chore
+description: Maintenance, refactoring, tooling, dependencies, or docs — no change in behaviour
+title: "chore: "
+labels: ["chore"]
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind
+      options:
+        - refactor
+        - chore
+        - docs
+        - test
+        - ci
+        - build
+    validations:
+      required: true
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What needs doing
+    validations:
+      required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: Why now
+      description: The pain this removes or the risk it reduces.
+    validations:
+      required: true
+
+  - type: textarea
+    id: done-when
+    attributes:
+      label: Done when
+      description: Observable checks that decide whether this is finished. Behaviour should be unchanged.
+      value: |
+        - [ ]
+        - [ ]
+    validations:
+      required: true
