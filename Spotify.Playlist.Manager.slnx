@@ -18,6 +18,9 @@
     <File Path=".github/ISSUE_TEMPLATE/config.yml" />
     <File Path=".github/ISSUE_TEMPLATE/feature.yml" />
   </Folder>
+  <Folder Name="/Solution Items/docs/">
+    <File Path="docs/ADR.md.template" />
+  </Folder>
   <Folder Name="/src/">
     <Project Path="src/UI/UI.csproj" />
   </Folder>

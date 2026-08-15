@@ -1,0 +1,120 @@
+# ADR Template - Spotify Playlist Manager
+
+Use this template when documenting new architectural decisions.
+
+---
+
+## ADR-XXX: [Clear, Concise Decision Title]
+
+**Status**: [Proposed | Accepted | Rejected | Superseded by ADR-YYY]
+
+**Date**: YYYY-MM-DD
+
+**Deciders**: [List people involved in the decision]
+
+**Context**:
+[Describe the context and problem statement. Include:]
+- What is the issue we're trying to solve?
+- What are the constraints (technical, business, time, cost)?
+- What are the requirements or user needs?
+- What assumptions are we making?
+- Why does this decision matter?
+
+**Decision**:
+[Describe the decision that was made. Include:]
+- What approach are we taking?
+- How will it work at a high level?
+- What are the key components or changes?
+- Why this approach over others?
+
+**Consequences**:
+
+**Positive:**
+- [Benefit or advantage]
+- [Another benefit]
+- [Another benefit]
+
+**Negative:**
+- [Trade-off or disadvantage]
+- [Another trade-off]
+- [Cost or complexity increase]
+
+**Neutral/Warnings:**
+- [Important caveat or consideration]
+- [Future consideration]
+
+**Alternatives Considered**:
+1. **[Alternative 1 Name]**
+   - Description: [Brief description]
+   - Rejected because: [Reason]
+
+2. **[Alternative 2 Name]**
+   - Description: [Brief description]
+   - Rejected because: [Reason]
+
+3. **[Alternative 3 Name]**
+   - Description: [Brief description]
+   - Considered for future because: [Reason]
+
+**Related Decisions**:
+- [ADR-XXX: Related decision title]
+- [ADR-YYY: Another related decision]
+
+**Implementation Notes**:
+[Optional: Any specific guidance for implementation]
+- [Note about how to implement]
+- [Warning about edge cases]
+- [Reference to related patterns or practices]
+
+---
+
+## Quick Reference Checklist
+
+Before finalizing an ADR, ensure:
+- [ ] Title is clear and describes the decision
+- [ ] Status is set (Proposed/Accepted/Rejected/Superseded)
+- [ ] Context explains WHY this decision is needed
+- [ ] Decision clearly states WHAT we're doing
+- [ ] Consequences list both benefits and trade-offs
+- [ ] At least 2-3 alternatives were considered
+- [ ] Related ADRs are linked
+- [ ] Decision has been reviewed by relevant stakeholders
+- [ ] Implementation notes are added if needed
+
+## Examples of Good Decision Titles
+
+Good:
+- "Cache Spotify Audio Features Per Track"
+- "Use Refresh Tokens for Long-Running Playlist Syncs"
+- "Sort Playlists by Genre in the Browser"
+
+Bad (too vague):
+- "Change Database"
+- "Improve Performance"
+- "Update Playlists"
+
+## When to Write an ADR
+
+Write an ADR when making decisions about:
+- Architecture or system structure
+- Technology choices (frameworks, databases, libraries)
+- Design patterns or approaches
+- Data models or schemas
+- API contracts or interfaces
+- Security or compliance approaches
+- Testing strategies
+- Deployment or infrastructure
+
+## ADR Status Lifecycle
+
+```
+Proposed → Accepted
+         → Rejected
+
+Accepted → Superseded (by newer ADR)
+```
+
+- **Proposed**: Under discussion, not yet decided
+- **Accepted**: Decision made and being implemented
+- **Rejected**: Decision was considered but not chosen
+- **Superseded**: Decision was once accepted but has been replaced
