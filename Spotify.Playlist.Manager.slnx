@@ -3,6 +3,7 @@
     <File Path=".editorconfig" />
     <File Path=".gitattributes" />
     <File Path=".gitignore" />
+    <File Path="CHANGELOG.md" />
     <File Path="docker-compose.yml" />
     <File Path="nuget.config" />
     <File Path="README.md" />
